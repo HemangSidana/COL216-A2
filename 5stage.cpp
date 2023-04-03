@@ -1,4 +1,4 @@
-#include "MIPS_Processor.hpp"
+#include "5stage.hpp"
 
 int main(int argc, char *argv[])
 {
