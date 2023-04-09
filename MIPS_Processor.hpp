@@ -15,15 +15,13 @@
 #include <exception>
 #include <iostream>
 #include <boost/tokenizer.hpp>
-#include <map>
-using namespace std;
 
 struct MIPS_Architecture
 {
 	int registers[32] = {0}, PCcurr = 0, PCnext;
 	std::unordered_map<std::string, std::function<int(MIPS_Architecture &, std::string, std::string, std::string)>> instructions;
 	std::unordered_map<std::string, int> registerMap, address;
-	static const int MAX = (1 << 20);
+	static const int MAX = (1 << 20); // << means left shift. We are doing 2^20
 	int data[MAX >> 2] = {0};
 	std::vector<std::vector<std::string>> commands;
 	std::vector<int> commandCount;
@@ -40,11 +38,7 @@ struct MIPS_Architecture
 	// constructor to initialise the instruction set
 	MIPS_Architecture(std::ifstream &file)
 	{
-		instructions = {{"add", &MIPS_Architecture::add}, {"sub", &MIPS_Architecture::sub}, 
-		{"mul", &MIPS_Architecture::mul}, 
-		{"beq", &MIPS_Architecture::beq}, {"bne", &MIPS_Architecture::bne}, {"slt", &MIPS_Architecture::slt}, 
-		{"j", &MIPS_Architecture::j}, {"lw", &MIPS_Architecture::lw}, {"sw", &MIPS_Architecture::sw}, 
-		{"addi", &MIPS_Architecture::addi}};
+		instructions = {{"add", &MIPS_Architecture::add}, {"sub", &MIPS_Architecture::sub}, {"mul", &MIPS_Architecture::mul}, {"beq", &MIPS_Architecture::beq}, {"bne", &MIPS_Architecture::bne}, {"slt", &MIPS_Architecture::slt}, {"j", &MIPS_Architecture::j}, {"lw", &MIPS_Architecture::lw}, {"sw", &MIPS_Architecture::sw}, {"addi", &MIPS_Architecture::addi}};
 
 		for (int i = 0; i < 32; ++i)
 			registerMap["$" + std::to_string(i)] = i;
@@ -66,7 +60,7 @@ struct MIPS_Architecture
 		registerMap["$ra"] = 31;
 
 		constructCommands(file);
-		commandCount.assign(commands.size(), 0);
+		commandCount.assign(commands.size(), 0); // initialize the vector with n zeros. n=number of commands
 	}
 
 	// perform add operation
@@ -121,9 +115,8 @@ struct MIPS_Architecture
 			return 4;
 		if (address.find(label) == address.end() || address[label] == -1)
 			return 2;
-		if (!checkRegisters({r1, r2})){
-			// cout<<"hi"<<endl;
-			return 1;}
+		if (!checkRegisters({r1, r2}))
+			return 1;
 		PCnext = comp(registers[registerMap[r1]], registers[registerMap[r2]]) ? address[label] : PCcurr + 1;
 		return 0;
 	}
@@ -131,9 +124,8 @@ struct MIPS_Architecture
 	// implements slt operation
 	int slt(std::string r1, std::string r2, std::string r3)
 	{
-		if (!checkRegisters({r1, r2, r3}) || registerMap[r1] == 0){
-			// cout<<"hello"<<endl;
-			return 1;}
+		if (!checkRegisters({r1, r2, r3}) || registerMap[r1] == 0)
+			return 1;
 		registers[registerMap[r1]] = registers[registerMap[r2]] < registers[registerMap[r3]];
 		PCnext = PCcurr + 1;
 		return 0;
@@ -153,9 +145,8 @@ struct MIPS_Architecture
 	// perform load word operation
 	int lw(std::string r, std::string location, std::string unused1 = "")
 	{
-		if (!checkRegister(r) || registerMap[r] == 0){
-			// cout<<"hello satyam"<<endl;
-			return 1;}
+		if (!checkRegister(r) || registerMap[r] == 0)
+			return 1;
 		int address = locateAddress(location);
 		if (address < 0)
 			return abs(address);
@@ -167,9 +158,8 @@ struct MIPS_Architecture
 	// perform store word operation
 	int sw(std::string r, std::string location, std::string unused1 = "")
 	{
-		if (!checkRegister(r)){
-			// cout<<"hello atal"<<endl;
-			return 1;}
+		if (!checkRegister(r))
+			return 1;
 		int address = locateAddress(location);
 		if (address < 0)
 			return abs(address);
@@ -215,9 +205,8 @@ struct MIPS_Architecture
 	// perform add immediate operation
 	int addi(std::string r1, std::string r2, std::string num)
 	{
-		if (!checkRegisters({r1, r2}) || registerMap[r1] == 0){
-			// cout<<"hello kumar"<<endl;
-			return 1;}
+		if (!checkRegisters({r1, r2}) || registerMap[r1] == 0)
+			return 1;
 		try
 		{
 			registers[registerMap[r1]] = registers[registerMap[r2]] + stoi(num);
@@ -313,26 +302,22 @@ struct MIPS_Architecture
 		line = line.substr(0, line.find('#'));
 		std::vector<std::string> command;
 		boost::tokenizer<boost::char_separator<char>> tokens(line, boost::char_separator<char>(", \t"));
-		for (auto &s : tokens){
-			command.push_back(s);}
+		for (auto &s : tokens)
+			command.push_back(s);
 		// empty line or a comment only line
-		// cout<<command[0]<<endl;
-		// cout<< command[0].find(';') <<endl;
-		// cout<<string::npos<<endl;
 		if (command.empty())
 			return;
-		else if (command.size() == 1)
+		else if (command.size() == 1) //label
 		{
 			std::string label = command[0].back() == ':' ? command[0].substr(0, command[0].size() - 1) : "?";
-			if (address.find(label) == address.end())
+			if (address.find(label) == address.end()) //label found in addresses -> add and tell it the place from which its instruction starts
 				address[label] = commands.size();
-			else
+			else // if found then set its label to -1
 				address[label] = -1;
 			command.clear();
 		}
-		else if (command[0].back() == ':')
+		else if (command[0].back() == ':') // labels  may also be written in the form main: lw ...
 		{
-
 			std::string label = command[0].substr(0, command[0].size() - 1);
 			if (address.find(label) == address.end())
 				address[label] = commands.size();
@@ -340,9 +325,8 @@ struct MIPS_Architecture
 				address[label] = -1;
 			command = std::vector<std::string>(command.begin() + 1, command.end());
 		}
-		else if (command[0].find(':') != std::string::npos)
+		else if (command[0].find(':') != std::string::npos) //std::string::npos is the max value of the index of a string. Basically means if not found
 		{
-
 			int idx = command[0].find(':');
 			std::string label = command[0].substr(0, idx);
 			if (address.find(label) == address.end())
@@ -351,8 +335,8 @@ struct MIPS_Architecture
 				address[label] = -1;
 			command[0] = command[0].substr(idx + 1);
 		}
-		else if (command[1][0] == ':')
-		{   
+		else if (command[1][0] == ':')//if the user had put a space between the label name and :
+		{
 			if (address.find(command[0]) == address.end())
 				address[command[0]] = commands.size();
 			else
@@ -369,10 +353,6 @@ struct MIPS_Architecture
 			for (int i = 4; i < (int)command.size(); ++i)
 				command[3] += " " + command[i];
 		command.resize(4);
-		// for (int i=0; i<command.size(); i++){
-		// 	cout<<command[i]<<endl;
-		// }
-		// cout<<command<<endl;
 		commands.push_back(command);
 	}
 
@@ -380,9 +360,8 @@ struct MIPS_Architecture
 	void constructCommands(std::ifstream &file)
 	{
 		std::string line;
-		while (getline(file, line)){
-
-			parseCommand(line);}
+		while (getline(file, line))
+			parseCommand(line);
 		file.close();
 	}
 
@@ -400,24 +379,19 @@ struct MIPS_Architecture
 		{
 			++clockCycles;
 			std::vector<std::string> &command = commands[PCcurr];
-			
 			if (instructions.find(command[0]) == instructions.end())
 			{
-				handleExit(SYNTAX_ERROR, clockCycles);
+				handleExit(SYNTAX_ERROR, clockCycles); //command not found
 				return;
 			}
-			//error occured at this line
-			
-			exit_code ret = (exit_code) instructions[command[0]](*this, command[1], command[2], command[3]); 
-			cout<<ret<<endl;
-			// if (ret != SUCCESS)
-			// {
-			// 	cout<<"help"<<endl;
-			// 	handleExit(ret, clockCycles);
-			// 	return;
-			// }
+			exit_code ret = (exit_code) instructions[command[0]](*this, command[1], command[2], command[3]);
+			if (ret != SUCCESS)
+			{
+				handleExit(ret, clockCycles);
+				return;
+			}
 			++commandCount[PCcurr];
-			PCcurr = PCcurr+1;
+			PCcurr = PCnext;
 			printRegisters(clockCycles);
 		}
 		handleExit(SUCCESS, clockCycles);
@@ -431,74 +405,6 @@ struct MIPS_Architecture
 		for (int i = 0; i < 32; ++i)
 			std::cout << registers[i] << ' ';
 		std::cout << std::dec << '\n';
-	}
-
-
-	void executeCommandspipelined()
-	{
-		if (commands.size() >= MAX / 4)
-		{
-			handleExit(MEMORY_ERROR, 0);
-			return;
-		}
-        map<string, tuple<string,string>> mymap;
-		mymap["IF"]=make_tuple("","0");
-		mymap["ID"]=make_tuple("","0");
-		mymap["EX"]=make_tuple("","0");
-		mymap["MEM"]=make_tuple("","0");
-		mymap["WB"]=make_tuple("","0");
-		int clockCycles = 0;
-
-		while (PCcurr < commands.size())
-		{ 
-            std::vector<std::string> &command = commands[PCcurr];
-			if (get<1>(mymap["WB"])=="0"){
-				if (get<0>(mymap["MEM"])!=""){
-				get<0>(mymap["WB"])=get<0>(mymap["MEM"])
-				// mymap["WB"][1]="1";
-				}
-			}
-			if (get<1>mymap["MEM"][1]=="0"){
-				if (mymap["EX"][0]!=""){
-				mymap["MEM"][0]=mymap["EX"][0];
-				// mymap["MEM"][1]="1";
-				}
-			}
-			if (get<1>mymap["EX"][1]=="0"){
-				if (mymap["ID"][0]!=""){
-				mymap["EX"]=mymap["ID"][0];
-				// mymap["EX"][1]="1";
-				}
-			}
-			if (get<1>mymap["ID"][1]=="0"){
-				if (mymap("IF")[0]!=""){
-				mymap["ID"][0]=mymap["IF"][0];
-				// mymap["ID"][1]="1";
-				}
-			}
-			if (get<1>mymap["IF"][1]=="0"){
-				mymap["IF"][0]=commands[PCcurr];
-				// mymap["IF"][1]="1";
-				++commandCount[PCcurr];
-			   PCcurr = PCnext;
-			}
-            
-			
-			if (instructions.find(command[0]) == instructions.end())
-			{
-				handleExit(SYNTAX_ERROR, clockCycles);
-				return;
-			}
-			exit_code ret = (exit_code) instructions[command[0]](*this, command[1], command[2], command[3]);
-			if (ret != SUCCESS)
-			{
-				handleExit(ret, clockCycles);
-				return;
-			}
-			++clockCycles;
-			printRegisters(clockCycles);
-		}
-		handleExit(SUCCESS, clockCycles);
 	}
 };
 

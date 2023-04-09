@@ -1,4 +1,4 @@
-#include "5stage.hpp"
+#include "MIPS_Processor.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
 		std::cerr << "File could not be opened. Terminating...\n";
 		return 0;
 	}
+
 	mips->executeCommandsUnpipelined();
 	return 0;
 }
