@@ -382,6 +382,10 @@ struct MIPS_Architecture
 		{
 			++clockCycles;
 			vector<string> &command = commands[PCcurr];
+		// cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
+		// cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
+		// cout<<command[2]<<endl;
+
 			if (instructions.find(command[0]) == instructions.end())
 			{
 				handleExit(SYNTAX_ERROR, clockCycles); //command not found
