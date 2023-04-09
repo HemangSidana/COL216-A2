@@ -403,7 +403,7 @@ struct MIPS_Architecture
 		}
 		handleExit(SUCCESS, clockCycles);
 	}
-
+     void executeCommandspipelined() ;
 	// print the register data in hexadecimal
 	void printRegisters(int clockCycle)
 	{

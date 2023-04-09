@@ -17,7 +17,7 @@ struct stage
 };
 
 
-int detect_EX_hazard(a,  b)
+int detect_EX_hazard(stage a,  stage b)
 {
 	if (a.sig == "RW" && (a.rd == b.rs))
 	{
@@ -33,7 +33,7 @@ int detect_EX_hazard(a,  b)
 	}
 }
 
-int detect_Mem_hazard(a, b)
+int detect_Mem_hazard(stage a, stage b)
 {
 	if (a.sig == "MR" && (a.rd == b.rs))
 	{
@@ -49,14 +49,14 @@ int detect_Mem_hazard(a, b)
 	}
 }
 
-int detect_lw_hazard(a, b)
+int detect_lw_hazard( stage a, stage b)
 {
-	rs = a.rs;
-	rt = a.rt;
-	rd = a.rd;
-	rs1 = b.rs;
-	rt1 = b.rt;
-	rd1 = b.rd;
+	string rs = a.rs;
+	string rt = a.rt;
+	string rd = a.rd;
+	string rs1 = b.rs;
+	string rt1 = b.rt;
+    string rd1 = b.rd;
 	if (a.sig == "lw" && ((rt == rs1) || (rt == rt1)))
 	{
 		return 1;
@@ -93,7 +93,7 @@ void assign(stage &a, stage &b){
 	b.id=-1;
 }
 
-void executeCommandspipelined(MIPS_Architecture)
+ void MIPS_Architecture::executeCommandspipelined()
 {
 	if (commands.size() >= MAX / 4)
 	{
@@ -107,7 +107,7 @@ void executeCommandspipelined(MIPS_Architecture)
 	stage EX;
 	stage MEM;
 	stage WB;
-	while ((PCcurr < commands.size()|| IF.id==-1 || ID.id==-1 || EX.id==-1 || MEM.id==-1 || WB.id==-1))
+	while (PCcurr < commands.size() )
 	{
 		++clockCycles;
 		vector<string> &command = commands[PCcurr];
@@ -151,11 +151,11 @@ void executeCommandspipelined(MIPS_Architecture)
 		    PCcurr = PCnext;}
 			}
 		}
-		if (ID == -1 && IF != -1)
+		if (ID.id == -1 && IF.id != -1)
 		{
            assign(ID,IF);
 		}
-		if (IF == -1)
+		if (IF.id == -1)
 		{
 			vector<string> &command = commands[PCcurr];
 			IF.id=PCcurr;
@@ -195,6 +195,7 @@ int main(int argc, char *argv[])
 		std::cerr << "File could not be opened. Terminating...\n";
 		return 0;
 	}
+	// executeCommandspipelined(mips);
 	mips->executeCommandspipelined();
 	return 0;
 }
