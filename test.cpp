@@ -17,14 +17,16 @@ struct stage
 };
 
 
-int detect_EX_hazard(stage a,  stage b)
+int detect_EX_hazard(stage a,  stage b) // remember to incalculate hazard for lw in EX and MEM hazard
 {
 	if (a.id<0 || b.id<0){return 0;}
-	if (a.sig == "RW" && (a.rd == b.rs))
+	// if ( ((a.sig == "RW" &&a.rd == b.rs || (b.rs.find(a.rd))!=string::npos)))
+	if ( ((a.rd == b.rs || (b.rs.find(a.rd))!=string::npos)))
 	{
 		return 1;
 	}
-	else if (a.sig == "RW" && (a.rd == b.rt))
+	// else if ((a.sig == "RW" && (a.rd == b.rt || (b.rt.find(a.rd))!=string::npos)))
+	else if (( (a.rd == b.rt || (b.rt.find(a.rd))!=string::npos)))
 	{
 		return 2;
 	}
@@ -37,11 +39,13 @@ int detect_EX_hazard(stage a,  stage b)
 int detect_Mem_hazard(stage a, stage b)
 {  
 	if (a.id<0 || b.id<0){return 0;}
-	if (a.sig == "MR" && (a.rd == b.rs))
+	// if ( ((a.sig == "RW" &&a.rd == b.rs || (b.rs.find(a.rd))!=string::npos)))
+	if ( ((a.rd == b.rs || (b.rs.find(a.rd))!=string::npos)))
 	{
 		return 1;
 	}
-	else if ((a.sig == "MR" && (a.rd == b.rt)))
+	// else if ((a.sig == "RW" && (a.rd == b.rt || (b.rt.find(a.rd))!=string::npos)))
+	else if (( (a.rd == b.rt || (b.rt.find(a.rd))!=string::npos)))
 	{
 		return 2;
 	}
@@ -59,7 +63,7 @@ int detect_lw_hazard( stage a, stage b)
 	string rs1 = b.rs;
 	string rt1 = b.rt;
     string rd1 = b.rd;
-	if (a.sig == "lw" && ((rt == rs1) || (rt == rt1)))
+	if (a.sig == "MR" && ((rd == rs1) || (rd == rt1)))
 	{
 		return 1;
 	}
@@ -116,7 +120,7 @@ void assign2(stage &a, stage &b){
 		handleExit(MEMORY_ERROR, 0);
 		return;
 	}
-    int counter=-1;
+    // int PCcurr=-1;
 	int clockCycles = 0;
 	int cycle=0;
 	stage IF,IF_prev; 
@@ -124,16 +128,18 @@ void assign2(stage &a, stage &b){
 	stage EX,EX_prev;
 	stage MEM,MEM_prev;
 	stage WB,WB_prev;
+	bool stall=true;
+	bool branch=false;
 	int n=commands.size();
-	while (counter < n )
+	while (PCcurr < n )
 	{
+		if (cycle>30){break;}
 		cycle++;
 		++clockCycles;
-		cout<<"@@@@@@@ "<<counter<<endl;
 		// vector<string> command;
-		// if (counter<n-1 && IF.id==-1) { command= commands[counter+1];}
+		// if (PCcurr<n-1 && IF.id==-1) { command= commands[PCcurr+1];}
 		// else{
-		// 	 command = commands[counter];
+		// 	 command = commands[PCcurr];
 		// }
 		// for (auto x : command){
 		// 	cout<<x<<endl;
@@ -143,68 +149,111 @@ void assign2(stage &a, stage &b){
 		// 	handleExit(SYNTAX_ERROR, clockCycles); // command not found
 		// 	return;
 		// }
+		cout<<cycle<<" cycle "<<endl;
+		cout<<"PCcurr "<<PCcurr<<endl;
 		if (WB.id == -1 && MEM.id != -1)
 		{
+			cout<<"In WB"<<endl;
 			WB.id = MEM.id;
 			assign2(MEM_prev,MEM);
 			assign( WB,  MEM);
 			WB.id=-1;
-			if (counter==n-1){counter++; cycle++;}
+			if (PCcurr==n-1 && MEM.id==-1 && ID.id==-1 && EX.id==-1 && IF.id==-1){PCcurr++; cycle++;}
 		}
 		if (MEM.id == -1 && EX.id != -1)
 		{
+			cout<<"In MEM"<<endl;
 			assign2(EX_prev,EX);
             assign(MEM,EX);
-			
+			if (EX_prev.sig=="NA"){ 
+				cout<<"NA "<<EX_prev.ins<< EX_prev.rd<<endl;
+				if (EX_prev.ins=="beq"){beq(EX_prev.rs,EX_prev.rt,EX_prev.rd);}
+				else if (EX_prev.ins=="bne"){bne(EX_prev.rs,EX_prev.rt,EX_prev.rd);}
+				else {j(EX_prev.rd);}
+				// cout<<beq(EX_prev.rs,EX_prev.rt,EX_prev.rd)<<" dfsd"<<endl;
+				// exit_code ret = (exit_code) instructions[EX_prev.ins](*this, EX_prev.rd, EX_prev.rs,EX_prev.rt);
+				// cout<<"ret "<<ret<<endl;
+				branch=false;
+				PCcurr=PCnext-1;
+				cout<<PCnext-1<<" a PCcurr "<<PCcurr<<endl;
+			}
 		}
 		if (EX.id == -1 && ID.id != -1) 
-		{   cout<<((detect_EX_hazard(EX_prev,ID))==0 && detect_Mem_hazard(MEM,ID)==0)<<endl;
-			if ((detect_EX_hazard(EX_prev,ID))==0 && detect_Mem_hazard(MEM,ID)==0) {
+		{  
+// cout<<EX_prev.id<<" EX_hazard:"<<(detect_EX_hazard(EX_prev,ID))<<" MEM_hazard:"<<(detect_EX_hazard(MEM_prev,ID))<<" Lw_hazard: "<<detect_lw_hazard(EX_prev,ID)<<endl;
+		    // cout<<endl;
+			if (((detect_EX_hazard(EX_prev,ID))==0 && detect_Mem_hazard(MEM_prev,ID)==0 && detect_lw_hazard(EX_prev,ID)==0) || stall==false) {
+				cout<<"IN EX"<<endl;
 			assign2(ID_prev,ID);
             assign(EX,ID);
+			if (EX.sig!="NA"){
 			exit_code ret = (exit_code) instructions[EX.ins](*this, EX.rd, EX.rs,EX.rt);
-			if (ret != SUCCESS)
-			{
-				handleExit(ret, clockCycles);
-				return;
+			cout<<"ret "<<ret<<endl;}
+			// if (ret != SUCCESS)
+			// {
+			// 	handleExit(ret, clockCycles);
+			// 	return;
+			// }
+			++commandCount[PCcurr];
+		    // PCcurr = PCnext;
 			}
-			++commandCount[counter];
-			if (EX.sig=="NA"){ counter=PCnext-1;}
-		    // counter = PCnext;
+			else{
+				cout<<" before stall "<<stall<<" MEM_id "<<(MEM_prev.id)<<" ID.id "<<ID.id<<endl;
+			if (WB.id==-1 && (MEM_prev.id+1==ID.id || MEM_prev.id+2==ID.id) && MEM_prev.id!=-1){stall=false; MEM_prev.id=-1;}
+			else {stall=true;}
 			}
+			cout<<" after stall "<<stall<<endl; 
 		}
 		if (ID.id == -1 && IF.id != -1)
 		{
-			assign2(IF_prev,ID_prev);
+			cout<<"In ID"<<endl;
+			assign2(IF_prev,IF);
            assign(ID,IF);
 		}
-		if (IF.id == -1 && counter<n-1)
+		if (IF.id == -1 && PCcurr<n-1 && branch==false)
 		{   
 			// cout<<"HI"<<endl;
-			counter++;
-			vector<string> command = commands[counter];
-			
-			IF.id=counter;
+			cout<<"In IF"<<endl;
+			PCcurr++;
+			vector<string> command = commands[PCcurr];
+			IF.id=PCcurr;
 			IF.sig=signal(command[0]);
 			IF.ins=command[0];
+			if (IF.ins=="bne" || IF.ins=="beq"){
+				branch=true;
+				IF.rd=command[3];
+				IF.rs=command[1];
+				IF.rt=command[2];
+			}
+			else if (IF.ins=="j"){
+				branch=true;
+				IF.rd=command[1];
+				IF.rs=command[2];
+				IF.rt=command[3];
+			}
+			else if (IF.ins=="lw" || IF.ins=="sw"){
+				IF.rs=command[1];
+				IF.rt=command[2];
+			}
+			else{
             IF.rd=command[1];
 			IF.rs=command[2];
-			IF.rt=command[3];
-			// counter=PCnext;
+			IF.rt=command[3]; }
+			// PCcurr=PCnext;
 			// if (PCbranch == -1)
 			// {
-			// 	counter++;
+			// 	PCcurr++;
 			// }
 			// else
 			// {
-			// 	counter = PCbranch;
+			// 	PCcurr = PCbranch;
 			// 	PCbranch = -1;
 			// }
 		}
-		printRegisters(clockCycles);
+		// printRegisters(cycle);
 	}
 	cout<<"cycle: "<<cycle<<endl;
-	handleExit(SUCCESS, clockCycles);
+	// handleExit(SUCCESS, clockCycles);
 }
 
 int main(int argc, char *argv[])

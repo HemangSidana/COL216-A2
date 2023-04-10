@@ -21,7 +21,7 @@ using namespace std;
 
 struct MIPS_Architecture
 {
-	int registers[32] = {0}, PCcurr = 0, PCnext;
+	int registers[32] = {0}, PCcurr = -1, PCnext;
 	unordered_map<string, function<int(MIPS_Architecture &, string, string, string)>> instructions;
 	unordered_map<string, int> registerMap, address;
 	static const int MAX = (1 << 20); // << means left shift. We are doing 2^20
@@ -121,6 +121,7 @@ struct MIPS_Architecture
 		if (!checkRegisters({r1, r2}))
 			return 1;
 		PCnext = comp(registers[registerMap[r1]], registers[registerMap[r2]]) ? address[label] : PCcurr + 1;
+		cout<<"in mips_processor "<<PCnext<<endl;
 		return 0;
 	}
 
@@ -142,6 +143,7 @@ struct MIPS_Architecture
 		if (address.find(label) == address.end() || address[label] == -1)
 			return 2;
 		PCnext = address[label];
+		cout<<"I am here"<<endl;
 		return 0;
 	}
 
@@ -383,7 +385,7 @@ struct MIPS_Architecture
 			++clockCycles;
 			vector<string> &command = commands[PCcurr];
 		// cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
-		// cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
+		cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
 		// cout<<command[2]<<endl;
 
 			if (instructions.find(command[0]) == instructions.end())
@@ -392,6 +394,8 @@ struct MIPS_Architecture
 				return;
 			}
 			exit_code ret = (exit_code) instructions[command[0]](*this, command[1], command[2], command[3]);
+			cout<<ret<<endl;
+			cout<<"PCnext "<<PCnext<<endl;
 			if (ret != SUCCESS)
 			{
 				handleExit(ret, clockCycles);
