@@ -16,7 +16,7 @@ struct instruct{
 };
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-      if (ins[a].rs==ins[b].rd || ins[a].rt==ins[b].rd){
+      if (ins[a].rs==ins[b].rd || ins[b].rd.find(ins[a].rt)!=string::npos){
 		return 2;
 	  }
 	  else{
@@ -100,28 +100,40 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		}
 		else {
 			if(ins[id[i]].type=="sw"){
-				int y= sw_hazard(i,i-1,ins);
+				int y= sw_hazard(id[i],id[i]-1,ins);
 				int z= 0; int x=0;
-				if(i>1){z=sw_hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				ins[id[i]].time[0]=ins[i-1].time[1];
-				ins[id[i]].time[1]=ins[i-1].time[2];
-				ins[id[i]].time[2]= max((ins[i-1].time[3]+y),x);
+				if(id[i]>1){z=sw_hazard(id[i],id[i]-2,ins); x=ins[id[i]-2].time[3]+z;}
+				ins[id[i]].time[0]=ins[id[i]-1].time[1];
+				ins[id[i]].time[1]=ins[id[i]-1].time[2];
+				ins[id[i]].time[2]= max((ins[id[i]-1].time[3]+y),x);
 				ins[id[i]].time[3]=ins[id[i]].time[2]+1;
 				ins[id[i]].time[4]=ins[id[i]].time[3]+1;
 			}
 			else{
-				int y= hazard(i,i-1,ins);
+				int y= hazard(id[i],id[i]-1,ins);
 				int z= 0; int x=0;
-				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				(ins[id[i]].time)[0]=(ins[i-1].time)[1];
-				ins[id[i]].time[1]=ins[i-1].time[2];
-				ins[id[i]].time[2]= max((ins[i-1].time[3]+y),x);
+				if(id[i]>1){z=hazard(id[i],id[i]-2,ins); x=ins[id[i]-2].time[3]+z;}
+				(ins[id[i]].time)[0]=(ins[id[i]-1].time)[1];
+				ins[id[i]].time[1]=ins[id[i]-1].time[2];
+				ins[id[i]].time[2]= max((ins[id[i]-1].time[3]+y),x);
 				ins[id[i]].time[3]=ins[id[i]].time[2]+1;
 				ins[id[i]].time[4]=ins[id[i]].time[3]+1;
 			}
 		}
 	}
-	cout<<ins[m-1].time[4];
+	int s=ins[m-1].time[4];
+	cout<<s<<endl;
+	string t;
+	t.append(1+s,'.');
+	vector<string> pipe(m,t);
+	for(int i=0;i<m;i++){
+		for(int j=0;j<5;j++){
+			pipe[i][ins[i].time[j]]='|';
+		}
+	}
+	for(auto x: pipe){
+		cout<<x<<endl;
+	}
 }
 
 int main(int argc, char *argv[])
