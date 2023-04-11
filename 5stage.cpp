@@ -12,10 +12,12 @@ struct instruct{
 	string rd;
 	string type;
 	vector<int> time;
+	vector<int> value;
 };
 
 int hazard(int a,int b, instruct ( ins)[]){
       if (ins[a].rs==ins[b].rd || ins[a].rt==ins[b].rd){
+		if(ins[a].type=="sw"){return 1;}
 		return 2;
 	  }
 	  else{
@@ -26,7 +28,8 @@ int hazard(int a,int b, instruct ( ins)[]){
 
  void MIPS_Architecture::executeCommandspipelined()
 {
-	
+	vector<vector<int>> z= mips->executeCommandsUnpipelined();
+
 	if (commands.size() >= MAX / 4)
 	{
 		handleExit(MEMORY_ERROR, 0);
@@ -70,9 +73,21 @@ int hazard(int a,int b, instruct ( ins)[]){
 	}
 	ins[0].time={1,2,3,4,5};
 	for(int i=1;i<n;i++){ // remember to handle branch hazard
+		if(ins[i].type=="bne" || ins[i].type=="beq" || ins[i].type=="j"){
+			
+			continue;
+		}
 		int y= hazard(i,i-1,ins);
 		int z= 0; int x=0;
 		if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
+		if(ins[i].type="sw"){
+			ins[i].time[0]=ins[i-1].time[1];
+			ins[i].time[1]=ins[i-1].time[2];
+			ins[i].time[2]=ins[i-1].time[3];
+			ins[i].time[3]=(ins[i-1].time[4]+y);
+			ins[i].time[4]=ins[i].time[3]+1;
+			continue;
+		}
 		(ins[i].time)[0]=(ins[i-1].time)[1];
 		ins[i].time[1]=ins[i-1].time[2];
 		ins[i].time[2]= max((ins[i-1].time[3]+y),x);
@@ -98,7 +113,7 @@ int main(int argc, char *argv[])
 		std::cerr << "File could not be opened. Terminating...\n";
 		return 0;
 	}
-	// executeCommandspipelined(mips);
+	
 	mips->executeCommandspipelined();
 	return 0;
 }

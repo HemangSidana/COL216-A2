@@ -16,18 +16,16 @@
 #include <iostream>
 #include <boost/tokenizer.hpp>
 
-using namespace std;
-
-
 struct MIPS_Architecture
 {
-	int registers[32] = {0}, PCcurr = -1, PCnext;
-	unordered_map<string, function<int(MIPS_Architecture &, string, string, string)>> instructions;
-	unordered_map<string, int> registerMap, address;
-	static const int MAX = (1 << 20); // << means left shift. We are doing 2^20
+	int registers[32] = {0}, PCcurr = 0, PCnext;
+	std::unordered_map<std::string, std::function<int(MIPS_Architecture &, std::string, std::string, std::string)>> instructions;
+	std::unordered_map<std::string, int> registerMap, address;
+	static const int MAX = (1 << 20);
 	int data[MAX >> 2] = {0};
-	vector<vector<string>> commands;
-	vector<int> commandCount;
+	std::unordered_map<int, int> memoryDelta;
+	std::vector<std::vector<std::string>> commands;
+	std::vector<int> commandCount;
 	enum exit_code
 	{
 		SUCCESS = 0,
@@ -39,20 +37,20 @@ struct MIPS_Architecture
 	};
 
 	// constructor to initialise the instruction set
-	MIPS_Architecture(ifstream &file)
+	MIPS_Architecture(std::ifstream &file)
 	{
 		instructions = {{"add", &MIPS_Architecture::add}, {"sub", &MIPS_Architecture::sub}, {"mul", &MIPS_Architecture::mul}, {"beq", &MIPS_Architecture::beq}, {"bne", &MIPS_Architecture::bne}, {"slt", &MIPS_Architecture::slt}, {"j", &MIPS_Architecture::j}, {"lw", &MIPS_Architecture::lw}, {"sw", &MIPS_Architecture::sw}, {"addi", &MIPS_Architecture::addi}};
 
 		for (int i = 0; i < 32; ++i)
-			registerMap["$" + to_string(i)] = i;
+			registerMap["$" + std::to_string(i)] = i;
 		registerMap["$zero"] = 0;
 		registerMap["$at"] = 1;
 		registerMap["$v0"] = 2;
 		registerMap["$v1"] = 3;
 		for (int i = 0; i < 4; ++i)
-			registerMap["$a" + to_string(i)] = i + 4;
+			registerMap["$a" + std::to_string(i)] = i + 4;
 		for (int i = 0; i < 8; ++i)
-			registerMap["$t" + to_string(i)] = i + 8, registerMap["$s" + to_string(i)] = i + 16;
+			registerMap["$t" + std::to_string(i)] = i + 8, registerMap["$s" + std::to_string(i)] = i + 16;
 		registerMap["$t8"] = 24;
 		registerMap["$t9"] = 25;
 		registerMap["$k0"] = 26;
@@ -63,32 +61,32 @@ struct MIPS_Architecture
 		registerMap["$ra"] = 31;
 
 		constructCommands(file);
-		commandCount.assign(commands.size(), 0); // initialize the vector with n zeros. n=number of commands
+		commandCount.assign(commands.size(), 0);
 	}
 
 	// perform add operation
-	int add(string r1, string r2, string r3)
+	int add(std::string r1, std::string r2, std::string r3)
 	{
 		return op(r1, r2, r3, [&](int a, int b)
 				  { return a + b; });
 	}
 
 	// perform subtraction operation
-	int sub(string r1, string r2, string r3)
+	int sub(std::string r1, std::string r2, std::string r3)
 	{
 		return op(r1, r2, r3, [&](int a, int b)
 				  { return a - b; });
 	}
 
 	// perform multiplication operation
-	int mul(string r1, string r2, string r3)
+	int mul(std::string r1, std::string r2, std::string r3)
 	{
 		return op(r1, r2, r3, [&](int a, int b)
 				  { return a * b; });
 	}
 
 	// perform the binary operation
-	int op(string r1, string r2, string r3, function<int(int, int)> operation)
+	int op(std::string r1, std::string r2, std::string r3, std::function<int(int, int)> operation)
 	{
 		if (!checkRegisters({r1, r2, r3}) || registerMap[r1] == 0)
 			return 1;
@@ -98,21 +96,21 @@ struct MIPS_Architecture
 	}
 
 	// perform the beq operation
-	int beq(string r1, string r2, string label)
+	int beq(std::string r1, std::string r2, std::string label)
 	{
 		return bOP(r1, r2, label, [](int a, int b)
 				   { return a == b; });
 	}
 
 	// perform the bne operation
-	int bne(string r1, string r2, string label)
+	int bne(std::string r1, std::string r2, std::string label)
 	{
 		return bOP(r1, r2, label, [](int a, int b)
 				   { return a != b; });
 	}
 
 	// implements beq and bne by taking the comparator
-	int bOP(string r1, string r2, string label, function<bool(int, int)> comp)
+	int bOP(std::string r1, std::string r2, std::string label, std::function<bool(int, int)> comp)
 	{
 		if (!checkLabel(label))
 			return 4;
@@ -121,12 +119,11 @@ struct MIPS_Architecture
 		if (!checkRegisters({r1, r2}))
 			return 1;
 		PCnext = comp(registers[registerMap[r1]], registers[registerMap[r2]]) ? address[label] : PCcurr + 1;
-		cout<<"in mips_processor "<<PCnext<<endl;
 		return 0;
 	}
 
 	// implements slt operation
-	int slt(string r1, string r2, string r3)
+	int slt(std::string r1, std::string r2, std::string r3)
 	{
 		if (!checkRegisters({r1, r2, r3}) || registerMap[r1] == 0)
 			return 1;
@@ -136,19 +133,18 @@ struct MIPS_Architecture
 	}
 
 	// perform the jump operation
-	int j(string label, string unused1 = "", string unused2 = "")
+	int j(std::string label, std::string unused1 = "", std::string unused2 = "")
 	{
 		if (!checkLabel(label))
 			return 4;
 		if (address.find(label) == address.end() || address[label] == -1)
 			return 2;
 		PCnext = address[label];
-		cout<<"I am here"<<endl;
 		return 0;
 	}
 
 	// perform load word operation
-	int lw(string r, string location, string unused1 = "")
+	int lw(std::string r, std::string location, std::string unused1 = "")
 	{
 		if (!checkRegister(r) || registerMap[r] == 0)
 			return 1;
@@ -161,26 +157,28 @@ struct MIPS_Architecture
 	}
 
 	// perform store word operation
-	int sw(string r, string location, string unused1 = "")
+	int sw(std::string r, std::string location, std::string unused1 = "")
 	{
 		if (!checkRegister(r))
 			return 1;
 		int address = locateAddress(location);
 		if (address < 0)
 			return abs(address);
+		if (data[address] != registers[registerMap[r]])
+			memoryDelta[address] = registers[registerMap[r]];
 		data[address] = registers[registerMap[r]];
 		PCnext = PCcurr + 1;
 		return 0;
 	}
 
-	int locateAddress(string location)
+	int locateAddress(std::string location)
 	{
 		if (location.back() == ')')
 		{
 			try
 			{
 				int lparen = location.find('('), offset = stoi(lparen == 0 ? "0" : location.substr(0, lparen));
-				string reg = location.substr(lparen + 1);
+				std::string reg = location.substr(lparen + 1);
 				reg.pop_back();
 				if (!checkRegister(reg))
 					return -3;
@@ -189,7 +187,7 @@ struct MIPS_Architecture
 					return -3;
 				return address / 4;
 			}
-			catch (exception &e)
+			catch (std::exception &e)
 			{
 				return -4;
 			}
@@ -201,14 +199,14 @@ struct MIPS_Architecture
 				return -3;
 			return address / 4;
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			return -4;
 		}
 	}
 
 	// perform add immediate operation
-	int addi(string r1, string r2, string num)
+	int addi(std::string r1, std::string r2, std::string num)
 	{
 		if (!checkRegisters({r1, r2}) || registerMap[r1] == 0)
 			return 1;
@@ -218,14 +216,14 @@ struct MIPS_Architecture
 			PCnext = PCcurr + 1;
 			return 0;
 		}
-		catch (exception &e)
+		catch (std::exception &e)
 		{
 			return 4;
 		}
 	}
 
 	// checks if label is valid
-	inline bool checkLabel(string str)
+	inline bool checkLabel(std::string str)
 	{
 		return str.size() > 0 && isalpha(str[0]) && all_of(++str.begin(), str.end(), [](char c)
 														   { return (bool)isalnum(c); }) &&
@@ -233,15 +231,15 @@ struct MIPS_Architecture
 	}
 
 	// checks if the register is a valid one
-	inline bool checkRegister(string r)
+	inline bool checkRegister(std::string r)
 	{
 		return registerMap.find(r) != registerMap.end();
 	}
 
 	// checks if all of the registers are valid or not
-	bool checkRegisters(vector<string> regs)
+	bool checkRegisters(std::vector<std::string> regs)
 	{
-		return all_of(regs.begin(), regs.end(), [&](string r)
+		return std::all_of(regs.begin(), regs.end(), [&](std::string r)
 						   { return checkRegister(r); });
 	}
 
@@ -256,91 +254,77 @@ struct MIPS_Architecture
 	*/
 	void handleExit(exit_code code, int cycleCount)
 	{
-		cout << '\n';
+		std::cout << '\n';
 		switch (code)
 		{
 		case 1:
-			cerr << "Invalid register provided or syntax error in providing register\n";
+			std::cerr << "Invalid register provided or syntax error in providing register\n";
 			break;
 		case 2:
-			cerr << "Label used not defined or defined too many times\n";
+			std::cerr << "Label used not defined or defined too many times\n";
 			break;
 		case 3:
-			cerr << "Unaligned or invalid memory address specified\n";
+			std::cerr << "Unaligned or invalid memory address specified\n";
 			break;
 		case 4:
-			cerr << "Syntax error encountered\n";
+			std::cerr << "Syntax error encountered\n";
 			break;
 		case 5:
-			cerr << "Memory limit exceeded\n";
+			std::cerr << "Memory limit exceeded\n";
 			break;
 		default:
 			break;
 		}
 		if (code != 0)
 		{
-			cerr << "Error encountered at:\n";
+			std::cerr << "Error encountered at:\n";
 			for (auto &s : commands[PCcurr])
-				cerr << s << ' ';
-			cerr << '\n';
-		}
-		cout << "\nFollowing are the non-zero data values:\n";
-		for (int i = 0; i < MAX / 4; ++i)
-			if (data[i] != 0)
-				cout << 4 * i << '-' << 4 * i + 3 << hex << ": " << data[i] << '\n'
-						  << dec;
-		cout << "\nTotal number of cycles: " << cycleCount << '\n';
-		cout << "Count of instructions executed:\n";
-		for (int i = 0; i < (int)commands.size(); ++i)
-		{
-			cout << commandCount[i] << " times:\t";
-			for (auto &s : commands[i])
-				cout << s << ' ';
-			cout << '\n';
+				std::cerr << s << ' ';
+			std::cerr << '\n';
 		}
 	}
 
 	// parse the command assuming correctly formatted MIPS instruction (or label)
-	void parseCommand(string line)
+	void parseCommand(std::string line)
 	{
 		// strip until before the comment begins
 		line = line.substr(0, line.find('#'));
-		vector<string> command;
+		std::vector<std::string> command;
 		boost::tokenizer<boost::char_separator<char>> tokens(line, boost::char_separator<char>(", \t"));
 		for (auto &s : tokens)
 			command.push_back(s);
 		// empty line or a comment only line
 		if (command.empty())
 			return;
-		else if (command.size() == 1) //label
+		else if (command.size() == 1)
 		{
-			string label = command[0].back() == ':' ? command[0].substr(0, command[0].size() - 1) : "?";
-			if (address.find(label) == address.end()) //label found in addresses -> add and tell it the place from which its instruction starts
-				address[label] = commands.size();
-			else // if found then set its label to -1
-				address[label] = -1;
-			command.clear();
-		}
-		else if (command[0].back() == ':') // labels  may also be written in the form main: lw ...
-		{
-			string label = command[0].substr(0, command[0].size() - 1);
+			std::string label = command[0].back() == ':' ? command[0].substr(0, command[0].size() - 1) : "?";
 			if (address.find(label) == address.end())
 				address[label] = commands.size();
 			else
 				address[label] = -1;
-			command = vector<string>(command.begin() + 1, command.end());
+			command.clear();
 		}
-		else if (command[0].find(':') != string::npos) //string::npos is the max value of the index of a string. Basically means if not found
+		else if (command[0].back() == ':')
+		{
+			std::string label = command[0].substr(0, command[0].size() - 1);
+			if (address.find(label) == address.end())
+				address[label] = commands.size();
+			else
+				address[label] = -1;
+			command = std::vector<std::string>(command.begin() + 1, command.end());
+		}
+		else if (command[0].find(':') != std::string::npos)
 		{
 			int idx = command[0].find(':');
-			string label = command[0].substr(0, idx);
+			std::string label = command[0].substr(0, idx);
 			if (address.find(label) == address.end())
 				address[label] = commands.size();
 			else
 				address[label] = -1;
 			command[0] = command[0].substr(idx + 1);
 		}
-		else if (command[1][0] == ':')//if the user had put a space between the label name and :
+		else if (command[1][0] == ':')
 		{
 			if (address.find(command[0]) == address.end())
 				address[command[0]] = commands.size();
@@ -362,17 +346,18 @@ struct MIPS_Architecture
 	}
 
 	// construct the commands vector from the input file
-	void constructCommands(ifstream &file)
+	void constructCommands(std::ifstream &file)
 	{
-		string line;
+		std::string line;
 		while (getline(file, line))
 			parseCommand(line);
 		file.close();
 	}
 
 	// execute the commands sequentially (no pipelining)
-	void executeCommandsUnpipelined()
+	vector<vector<int>> executeCommandsUnpipelined()
 	{
+		vector<vector<int>>z;
 		if (commands.size() >= MAX / 4)
 		{
 			handleExit(MEMORY_ERROR, 0);
@@ -383,19 +368,13 @@ struct MIPS_Architecture
 		while (PCcurr < commands.size())
 		{
 			++clockCycles;
-			vector<string> &command = commands[PCcurr];
-		// cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
-		cout<<command[0]<<" "<<command[1]<<" "<<command[2]<<" "<<command[3]<<endl;
-		// cout<<command[2]<<endl;
-
+			std::vector<std::string> &command = commands[PCcurr];
 			if (instructions.find(command[0]) == instructions.end())
 			{
-				handleExit(SYNTAX_ERROR, clockCycles); //command not found
+				handleExit(SYNTAX_ERROR, clockCycles);
 				return;
 			}
 			exit_code ret = (exit_code) instructions[command[0]](*this, command[1], command[2], command[3]);
-			cout<<ret<<endl;
-			cout<<"PCnext "<<PCnext<<endl;
 			if (ret != SUCCESS)
 			{
 				handleExit(ret, clockCycles);
@@ -403,19 +382,26 @@ struct MIPS_Architecture
 			}
 			++commandCount[PCcurr];
 			PCcurr = PCnext;
-			printRegisters(clockCycles);
+			vector<int> y;
+			y=printRegistersAndMemoryDelta(clockCycles);
+			z.push_back(y);
 		}
-		handleExit(SUCCESS, clockCycles);
+		// handleExit(SUCCESS, clockCycles);
+		return z;
 	}
-     void executeCommandspipelined() ;
+
 	// print the register data in hexadecimal
-	void printRegisters(int clockCycle)
+	vector<int> printRegistersAndMemoryDelta(int clockCycle)
 	{
-		cout << "Cycle number: " << clockCycle << '\n'
-				  << hex;
+		vector<int> x;
 		for (int i = 0; i < 32; ++i)
-			cout << registers[i] << ' ';
-		cout << dec << '\n';
+			x.push_back(registers[i]);
+		// std::cout << '\n';
+		// std::cout << memoryDelta.size() << ' ';
+		// for (auto &p : memoryDelta)
+		// 	std::cout << p.first << ' ' << p.second << '\n';
+		// memoryDelta.clear();
+		return x;
 	}
 };
 
