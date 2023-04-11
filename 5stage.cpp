@@ -23,13 +23,13 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		return 0;
 	  }
 }
-
+// 
 int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-      if (ins[a].rs==ins[b].rd){
+	  if (ins[b].rd.find(ins[a].rt)!=string::npos){
 		return 2;
 	  }
-	  else if (ins[b].rd.find(ins[a].rt)!=string::npos){
-		return 1;
+	  else if (ins[a].rs==ins[b].rd){
+		return 2;
 	  }
 	  else{
 		return 0;
@@ -37,11 +37,10 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 }
 
 
- void MIPS_Architecture::executeCommandspipelined()
+ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 {
-	vector<vector<vector<int>>> p= mips->executeCommandsUnpipelined();
 	vector<vector<int>> eval= p[1];
-	vector<int> id = p[0] ;
+	vector<int> id = p[0][0] ;
     int m=id.size();
 	if (commands.size() >= MAX / 4)
 	{
@@ -57,60 +56,69 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 				ins[id[i]].rd=command[3];
 				ins[id[i]].rs=command[1];
 				ins[id[i]].rt=command[2];
-				ins[id[i]].values=eval[id[i]];
+				ins[id[i]].value=eval[id[i]];
 			}
 		else if (command[0]=="j"){
 			ins[id[i]].rd=command[1];
 			ins[id[i]].rs="";
 			ins[id[i]].rt="";
-			ins[id[i]].values=eval[id[i]];
+			ins[id[i]].value=eval[id[i]];
 		}
 		else if (command[0]=="lw"){
 			ins[id[i]].rd=command[1];
 			ins[id[i]].rs=command[2];
 			ins[id[i]].rt="";
-			ins[id[i]].values=eval[id[i]];
+			ins[id[i]].value=eval[id[i]];
 		}
 
 		else if (command[0]=="sw"){
 			ins[id[i]].rs=command[1];
 			ins[id[i]].rt=command[2];
 			ins[id[i]].rd="";
-			ins[id[i]].values=eval[id[i]];
+			ins[id[i]].value=eval[id[i]];
 		}
 
 		else{
 		ins[id[i]].rd=command[1];
 		ins[id[i]].rs=command[2];
 		ins[id[i]].rt=command[3]; 
-		ins[id[i]].values=eval[id[i]];
+		ins[id[i]].value=eval[id[i]];
 		}
 		for (int j=0; j<5; j++){
 			(ins[id[i]].time).push_back(-1);
 		}
 	}
 	ins[0].time={1,2,3,4,5};
-	for(int i=1;i<m;i++){ // remember to handle branch hazard
+	for(int i=1;i<m;i++){ 
+		// remember to handle branch hazard
 		if(ins[id[i]].type=="bne" || ins[id[i]].type=="beq" || ins[id[i]].type=="j"){
-			
-			continue;
+				(ins[id[i]].time)[0]=(ins[i-1].time)[2]+1;
+				ins[id[i]].time[1]=ins[id[i]].time[0]+1;
+				ins[id[i]].time[2]=ins[id[i]].time[1]+1;
+				ins[id[i]].time[3]=ins[id[i]].time[2]+1;
+				ins[id[i]].time[4]=ins[id[i]].time[3]+1;
 		}
-		else if(ins[id[i]].type="sw"){
-			ins[id[i]].time[0]=ins[i-1].time[1];
-			ins[id[i]].time[1]=ins[i-1].time[2];
-			ins[id[i]].time[2]=ins[i-1].time[3];
-			ins[id[i]].time[3]=(ins[i-1].time[4]+y);
-			ins[id[i]].time[4]=ins[id[i]].time[3]+1;
-		}
-		else{
-			int y= hazard(i,i-1,ins);
-			int z= 0; int x=0;
-			if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-			(ins[id[i]].time)[0]=(ins[i-1].time)[1];
-			ins[id[i]].time[1]=ins[i-1].time[2];
-			ins[id[i]].time[2]= max((ins[i-1].time[3]+y),x);
-			ins[id[i]].time[3]=ins[id[i]].time[2]+1;
-			ins[id[i]].time[4]=ins[id[i]].time[3]+1;
+		else {
+			if(ins[id[i]].type=="sw"){
+				int y= sw_hazard(i,i-1,ins);
+				int z= 0; int x=0;
+				if(i>1){z=sw_hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
+				ins[id[i]].time[0]=ins[i-1].time[1];
+				ins[id[i]].time[1]=ins[i-1].time[2];
+				ins[id[i]].time[2]= max((ins[i-1].time[3]+y),x);
+				ins[id[i]].time[3]=ins[id[i]].time[2]+1;
+				ins[id[i]].time[4]=ins[id[i]].time[3]+1;
+			}
+			else{
+				int y= hazard(i,i-1,ins);
+				int z= 0; int x=0;
+				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
+				(ins[id[i]].time)[0]=(ins[i-1].time)[1];
+				ins[id[i]].time[1]=ins[i-1].time[2];
+				ins[id[i]].time[2]= max((ins[i-1].time[3]+y),x);
+				ins[id[i]].time[3]=ins[id[i]].time[2]+1;
+				ins[id[i]].time[4]=ins[id[i]].time[3]+1;
+			}
 		}
 	}
 	cout<<ins[m-1].time[4];
@@ -132,7 +140,7 @@ int main(int argc, char *argv[])
 		std::cerr << "File could not be opened. Terminating...\n";
 		return 0;
 	}
-	
-	mips->executeCommandspipelined();
+	vector<vector<vector<int>>> p= mips->executeCommandsUnpipelined();
+	mips->executeCommandspipelined(p);
 	return 0;
 }
