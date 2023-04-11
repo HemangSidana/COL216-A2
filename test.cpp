@@ -128,12 +128,13 @@ void assign2(stage &a, stage &b){
 	stage EX,EX_prev;
 	stage MEM,MEM_prev;
 	stage WB,WB_prev;
-	bool stall=true;
+	bool stall=false;
 	bool branch=false;
 	int n=commands.size();
+    vector<int> eval(n,0);
 	while (PCcurr < n )
 	{
-		if (cycle>30){break;}
+		if (cycle>40){break;}
 		cycle++;
 		++clockCycles;
 		// vector<string> command;
@@ -157,6 +158,7 @@ void assign2(stage &a, stage &b){
 			WB.id = MEM.id;
 			assign2(MEM_prev,MEM);
 			assign( WB,  MEM);
+			eval[WB.id]=cycle;
 			WB.id=-1;
 			if (PCcurr==n-1 && MEM.id==-1 && ID.id==-1 && EX.id==-1 && IF.id==-1){PCcurr++; cycle++;}
 		}
@@ -180,28 +182,42 @@ void assign2(stage &a, stage &b){
 		}
 		if (EX.id == -1 && ID.id != -1) 
 		{  
-// cout<<EX_prev.id<<" EX_hazard:"<<(detect_EX_hazard(EX_prev,ID))<<" MEM_hazard:"<<(detect_EX_hazard(MEM_prev,ID))<<" Lw_hazard: "<<detect_lw_hazard(EX_prev,ID)<<endl;
-		    // cout<<endl;
-			if (((detect_EX_hazard(EX_prev,ID))==0 && detect_Mem_hazard(MEM_prev,ID)==0 && detect_lw_hazard(EX_prev,ID)==0) || stall==false) {
-				cout<<"IN EX"<<endl;
+			if (detect_EX_hazard(MEM_prev,ID)==0 && detect_EX_hazard(EX_prev,ID)==0){
+				cout<<"IN EX1"<<endl;
 			assign2(ID_prev,ID);
             assign(EX,ID);
 			if (EX.sig!="NA"){
 			exit_code ret = (exit_code) instructions[EX.ins](*this, EX.rd, EX.rs,EX.rt);
 			cout<<"ret "<<ret<<endl;}
-			// if (ret != SUCCESS)
-			// {
-			// 	handleExit(ret, clockCycles);
-			// 	return;
-			// }
 			++commandCount[PCcurr];
-		    // PCcurr = PCnext;
 			}
-			else{
-				cout<<" before stall "<<stall<<" MEM_id "<<(MEM_prev.id)<<" ID.id "<<ID.id<<endl;
-			if (WB.id==-1 && (MEM_prev.id+1==ID.id || MEM_prev.id+2==ID.id) && MEM_prev.id!=-1){stall=false; MEM_prev.id=-1;}
+			else if (detect_EX_hazard(MEM_prev,ID)!=0 && detect_EX_hazard(EX_prev,ID)!=0 && eval[ID.id-1]<=cycle-1 && eval[ID.id-2]<=cycle-2 && eval[ID.id-1]>0 && eval[ID.id-2]>0  ){
+				cout<<"eval[ID.id]"<<eval[ID.id-1]<<endl;
+				stall=false;
+				cout<<"IN EX2"<<endl;
+			assign2(ID_prev,ID);
+            assign(EX,ID);
+			if (EX.sig!="NA"){
+			exit_code ret = (exit_code) instructions[EX.ins](*this, EX.rd, EX.rs,EX.rt);
+			cout<<"ret "<<ret<<endl;}
+			++commandCount[PCcurr];}
+			else if (detect_EX_hazard(EX_prev,ID)!=0 && detect_EX_hazard(MEM_prev,ID)==0 && eval[ID.id-1]<=cycle-1  && eval[ID.id-1]>0 ){stall=false;
+			cout<<"IN EX3"<<endl;
+			assign2(ID_prev,ID);
+            assign(EX,ID);
+			if (EX.sig!="NA"){
+			exit_code ret = (exit_code) instructions[EX.ins](*this, EX.rd, EX.rs,EX.rt);
+			cout<<"ret "<<ret<<endl;}
+			++commandCount[PCcurr];}
+			else if (detect_EX_hazard(MEM_prev,ID)!=0  && detect_EX_hazard(EX_prev,ID)==0 && eval[ID.id-2]<=cycle-2  && eval[ID.id-2]>0){stall=false;
+			cout<<"IN EX4"<<endl;
+			assign2(ID_prev,ID);
+            assign(EX,ID);
+			if (EX.sig!="NA"){
+			exit_code ret = (exit_code) instructions[EX.ins](*this, EX.rd, EX.rs,EX.rt);
+			cout<<"ret "<<ret<<endl;}
+			++commandCount[PCcurr];}
 			else {stall=true;}
-			}
 			cout<<" after stall "<<stall<<endl; 
 		}
 		if (ID.id == -1 && IF.id != -1)
@@ -253,7 +269,7 @@ void assign2(stage &a, stage &b){
 		// printRegisters(cycle);
 	}
 	cout<<"cycle: "<<cycle<<endl;
-	// handleExit(SUCCESS, clockCycles);
+	handleExit(SUCCESS, clockCycles);
 }
 
 int main(int argc, char *argv[])

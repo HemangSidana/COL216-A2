@@ -1,0 +1,216 @@
+1 cycle 
+PCcurr -1
+In IF
+2 cycle 
+PCcurr 0
+In ID
+In IF
+3 cycle 
+PCcurr 1
+IN EX1
+ret 0
+ after stall 0
+In ID
+In IF
+4 cycle 
+PCcurr 2
+In MEM
+IN EX1
+ret 0
+ after stall 0
+In ID
+5 cycle 
+PCcurr 2
+In WB
+In MEM
+ after stall 1
+6 cycle 
+PCcurr 2
+In WB
+ after stall 1
+7 cycle 
+PCcurr 2
+eval[ID.id]6
+IN EX2
+ after stall 0
+8 cycle 
+PCcurr 2
+In MEM
+NA beqone 
+2 a PCcurr 2
+In IF
+9 cycle 
+PCcurr 3
+In WB
+In ID
+In IF
+10 cycle 
+PCcurr 4
+IN EX1
+ret 1
+ after stall 0
+In ID
+In IF
+11 cycle 
+PCcurr 5
+In MEM
+IN EX1
+ret 0
+ after stall 0
+In ID
+12 cycle 
+PCcurr 5
+In WB
+In MEM
+ after stall 1
+13 cycle 
+PCcurr 5
+In WB
+ after stall 1
+14 cycle 
+PCcurr 5
+eval[ID.id]13
+IN EX2
+ after stall 0
+15 cycle 
+PCcurr 5
+In MEM
+NA bneone 
+5 a PCcurr 5
+In IF
+16 cycle 
+PCcurr 6
+In WB
+In ID
+17 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+18 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+19 cycle 
+PCcurr 6
+In WB
+In ID
+20 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+21 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+22 cycle 
+PCcurr 6
+In WB
+In ID
+23 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+24 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+25 cycle 
+PCcurr 6
+In WB
+In ID
+26 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+27 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+28 cycle 
+PCcurr 6
+In WB
+In ID
+29 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+30 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+31 cycle 
+PCcurr 6
+In WB
+In ID
+32 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+33 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+34 cycle 
+PCcurr 6
+In WB
+In ID
+35 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+36 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+37 cycle 
+PCcurr 6
+In WB
+In ID
+38 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+39 cycle 
+PCcurr 6
+In MEM
+NA beqtwo 
+5 a PCcurr 5
+In IF
+40 cycle 
+PCcurr 6
+In WB
+In ID
+41 cycle 
+PCcurr 6
+IN EX1
+ after stall 0
+cycle: 41
+
+
+Following are the non-zero data values:
+
+Total number of cycles: 41
+Count of instructions executed:
+0 times:	addi $1 $0 2 
+1 times:	addi $2 $0 1 
+2 times:	beq $1 $2 one  
+0 times:	sw $1 1023($2)  
+1 times:	addi $2 $2 1  
+2 times:	bne $1 $2 one  
+9 times:	beq $1 $2 two  
+0 times:	addi $2 $2 -1  
+0 times:	lw $3 1022($2)  

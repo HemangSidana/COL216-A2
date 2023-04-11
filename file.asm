@@ -1,6 +1,9 @@
 addi $1, $0, 2
 addi $2, $0, 1
+beq $1 , $2 , one 
 sw $1 , 1023($2) 
-add $1,$1,$1 
-sub $2 , $1, $2 
-lw $3, 1021($2)
+addi $2 , $2 , 1 
+bne $1 , $2 , one 
+beq $1 , $2 , two 
+one: addi $2 , $2 , -1 
+two: lw $3 , 1022($2)
