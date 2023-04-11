@@ -355,9 +355,11 @@ struct MIPS_Architecture
 	}
 
 	// execute the commands sequentially (no pipelining)
-	vector<vector<int>> executeCommandsUnpipelined()
+	vector<vector<vector<int>>> executeCommandsUnpipelined()
 	{
 		vector<vector<int>>z;
+        vector<int> arr;
+		vector<vector<vector<int>>> ans;
 		if (commands.size() >= MAX / 4)
 		{
 			handleExit(MEMORY_ERROR, 0);
@@ -369,6 +371,7 @@ struct MIPS_Architecture
 		{
 			++clockCycles;
 			std::vector<std::string> &command = commands[PCcurr];
+			arr.push_back(PCcurr);
 			if (instructions.find(command[0]) == instructions.end())
 			{
 				handleExit(SYNTAX_ERROR, clockCycles);
@@ -387,7 +390,9 @@ struct MIPS_Architecture
 			z.push_back(y);
 		}
 		// handleExit(SUCCESS, clockCycles);
-		return z;
+		ans.push_back(arr);
+		ans.push_back(z);
+		return ans;
 	}
 
 	// print the register data in hexadecimal
