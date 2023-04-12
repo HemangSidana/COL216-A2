@@ -16,12 +16,7 @@ struct instruct{
 };
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-      if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
-		return 2;
-	  }
-	  else{
-		return 0;
-	  }
+    
 }
 // 
 int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 

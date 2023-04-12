@@ -89,7 +89,7 @@ int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 	ins[id[0]].time={1,2,3,4,5};
 	for(int i=1;i<m;i++){ 
 		// remember to handle branch hazard
-		if(ins[i].type=="bne" || ins[i].type=="beq" || ins[i].type=="j"){
+		if(ins[i-1].type=="bne" || ins[i-1].type=="beq" || ins[i-1].type=="j"){
 				(ins[i].time)[0]=(ins[i-1].time)[2]+1;
 				ins[i].time[1]=ins[i].time[0]+1;
 				ins[i].time[2]=ins[i].time[1]+1;
