@@ -15,20 +15,37 @@ struct instruct{
 	vector<int> value;
 };
 
-int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-    
-}
-// 
-int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-	  if (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos){
-		return 2;
-	  }
-	  else if (ins[a].rs==ins[b].rd){
-		return 2;
-	  }
-	  else{
+int dep(int a,int b, instruct(ins)[]){
+	if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
+			return 1;
+		}
+	else{
 		return 0;
-	  }
+	}
+}
+
+
+int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
+    int x=7; int y=7;
+	if(ins[a].type=="sw" || ins[a].type=="lw"){x=9;}
+	if(ins[b].type=="sw" || ins[b].type=="lw"){y=9;}
+	int z= dep(a,b,ins);
+	if(x==7 && y==7){
+		if(dep){return 2;}
+		else{return 0;}
+	}
+	else if(x==7 && y==9){
+		if(dep && ins[b].type!="sw"){return 4;}
+		else{return 2;}
+	}
+	else if(x==9 && y==7){
+		if(dep){return 2;}
+		else{return 0;}
+	}
+	else{
+		if(dep && ins[b].type!="sw"){return 4;}
+		else{return 0;}
+	}
 }
 
 
@@ -83,52 +100,55 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 			(ins[i].time).push_back(-1);
 		}
 	}
-    if (ins[id[0]].type=="lw" || ins[id[0]].type=="sw"){
-        ins[id[0]].time={1,2,3,4,5,6,7,8,9};
-    }
-    else{
-        ins[id[0]].time={1,2,3,4,5,6,7,-1,-1};
-    }
-	
+
+    ins[id[0]].time={1,2,3,4,5,6,7,8,9};
 	for(int i=1;i<m;i++){ 
 		// remember to handle branch hazard
-		if(ins[i].type=="bne" || ins[i].type=="beq" || ins[i].type=="j"){
-				(ins[i].time)[0]=(ins[i-1].time)[2]+1;
-				ins[i].time[1]=ins[i].time[0]+1;
-				ins[i].time[2]=ins[i].time[1]+1;
-				ins[i].time[3]=ins[i].time[2]+1;
-				ins[i].time[4]=ins[i].time[3]+1;
+		if(ins[i-1].type=="bne" || ins[i-1].type=="beq" || ins[i-1].type=="j"){
+				ins[i].time[0]=ins[i-1].time[3]+1;
+				for(int j=1;j<9;j++){
+					ins[i].time[j]=ins[i].time[j-1]+1;
+				}
 		}
 		else {
-			if(ins[i].type=="sw"){
-				int y= sw_hazard(i,i-1,ins);
-				int z= 0; int x=0;
-				if(i>1){z=sw_hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				ins[i].time[0]=ins[i-1].time[1];
-				ins[i].time[1]=ins[i-1].time[2];
-				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
-				ins[i].time[3]=ins[i].time[2]+1;
-				ins[i].time[4]=ins[i].time[3]+1;
+			int x= hazard(i,i-1,ins); int z=ins[i-1].time[4];
+			if(ins[i-1].type=="sw" || ins[i-1].type=="lw"){
+				if(x){z=ins[i-1].time[8]+x;}
+				if(i>1){
+					int y=hazard(i,i-2,ins);
+					if(y){z=max(z,y+ins[i-2].time[8]);}
+				}
 			}
 			else{
-				int y= hazard(i,i-1,ins);
-				int z= 0; int x=0;
-				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				(ins[i].time)[0]=(ins[i-1].time)[1];
-				ins[i].time[1]=ins[i-1].time[2];
-				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
-				ins[i].time[3]=ins[i].time[2]+1;
-				ins[i].time[4]=ins[i].time[3]+1;
+				if(x){z=ins[i-1].time[6]+x;}
+				if(i>1){
+					int y=hazard(i,i-2,ins);
+					if(y){z=max(z,y+ins[i-2].time[6]);}
+				}
+			}
+			ins[i].time[0]=ins[i-1].time[0]+1;
+			ins[i].time[1]=ins[i].time[0]+1;
+			ins[i].time[2]=ins[i].time[1]+1;
+			ins[i].time[3]=z;
+			for(int j=4;j<9;j++){
+				ins[i].time[j]=ins[i].time[j-1]+1;
 			}
 		}
 	}
-	int s=ins[m-1].time[4];
+	int s=ins[m-1].time[6];
+	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
 	cout<<s<<endl;
 	string t;
 	t.append(1+s,'.');
 	vector<string> pipe(m,t);
 	for(int i=0;i<m;i++){
-		for(int j=0;j<5;j++){
+		if(ins[i].type=="lw" || ins[i].type=="sw"){
+			for(int j=0;j<9;j++){
+			pipe[i][ins[i].time[j]]='|';
+			}
+			continue;
+		}
+		for(int j=0;j<7;j++){
 			pipe[i][ins[i].time[j]]='|';
 		}
 	}
