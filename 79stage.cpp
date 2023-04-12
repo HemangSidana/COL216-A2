@@ -84,12 +84,17 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		ins[i].rt=command[3]; 
 		ins[i].value=eval[i];
 		}
-	   cout<<"Hello"<<endl;
-		for (int j=0; j<5; j++){
+		for (int j=0; j<9; j++){
 			(ins[i].time).push_back(-1);
 		}
 	}
-	ins[id[0]].time={1,2,3,4,5};
+    if (ins[id[0]].type=="lw" || ins[id[0]].type=="sw"){
+        ins[id[0]].time={1,2,3,4,5,6,7,8,9};
+    }
+    else{
+        ins[id[0]].time={1,2,3,4,5,6,7,-1,-1};
+    }
+	
 	for(int i=1;i<m;i++){ 
 		// remember to handle branch hazard
 		if(ins[i].type=="bne" || ins[i].type=="beq" || ins[i].type=="j"){

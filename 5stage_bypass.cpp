@@ -17,23 +17,20 @@ struct instruct{
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
       if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
-		return 2;
+		return 0;
 	  }
 	  else{
 		return 0;
 	  }
 }
 // 
-int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-	  if (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos){
-		return 2;
-	  }
-	  else if (ins[a].rs==ins[b].rd){
-		return 2;
-	  }
-	  else{
-		return 0;
-	  }
+int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
+    if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
+            return 1;
+        }
+        else{
+            return 0;
+        }
 }
 
 
@@ -100,24 +97,19 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 				ins[i].time[4]=ins[i].time[3]+1;
 		}
 		else {
-			if(ins[i].type=="sw"){
-				int y= sw_hazard(i,i-1,ins);
-				int z= 0; int x=0;
-				if(i>1){z=sw_hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				ins[i].time[0]=ins[i-1].time[1];
+			if(ins[i-1].type=="lw" && lw_hazard(i,i-1,ins)){
+				
+				(ins[i].time)[0]=(ins[i-1].time)[1];
 				ins[i].time[1]=ins[i-1].time[2];
-				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
+				ins[i].time[2]= ins[i-1].time[3]+1;
 				ins[i].time[3]=ins[i].time[2]+1;
 				ins[i].time[4]=ins[i].time[3]+1;
 			}
 			else{
-				int y= hazard(i,i-1,ins);
-				int z= 0; int x=0;
-				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
 				(ins[i].time)[0]=(ins[i-1].time)[1];
 				ins[i].time[1]=ins[i-1].time[2];
-				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
-				ins[i].time[3]=ins[i].time[2]+1;
+				ins[i].time[2]= ins[i-1].time[3];
+				ins[i].time[3]=ins[i-1].time[4];
 				ins[i].time[4]=ins[i].time[3]+1;
 			}
 		}
