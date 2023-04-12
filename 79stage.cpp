@@ -16,7 +16,10 @@ struct instruct{
 };
 
 int dep(int a,int b, instruct(ins)[]){
-	if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
+	bool x=(ins[a].rs==ins[b].rd);
+	bool y=(ins[a].rt.find(ins[b].rd)!=string::npos);
+	bool z=(ins[a].rt.find("$")!=string::npos);
+	if ( x || (y  && z)) {
 			return 1;
 		}
 	else{
@@ -31,19 +34,19 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 	if(ins[b].type=="sw" || ins[b].type=="lw"){y=9;}
 	int z= dep(a,b,ins);
 	if(x==7 && y==7){
-		if(dep){return 2;}
+		if(z){return 2;}
 		else{return 0;}
 	}
 	else if(x==7 && y==9){
-		if(dep && ins[b].type!="sw"){return 4;}
+		if(z && ins[b].type!="sw"){return 4;}
 		else{return 2;}
 	}
 	else if(x==9 && y==7){
-		if(dep){return 2;}
+		if(z){return 2;}
 		else{return 0;}
 	}
 	else{
-		if(dep && ins[b].type!="sw"){return 4;}
+		if(z && ins[b].type!="sw"){return 4;}
 		else{return 0;}
 	}
 }
