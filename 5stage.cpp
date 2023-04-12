@@ -16,7 +16,7 @@ struct instruct{
 };
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-      if (ins[a].rs==ins[b].rd || (ins[a].rt.find(ins[b].rd)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
+      if ((ins[a].rs==ins[b].rd || (ins[a].rt.find(ins[b].rd)!=string::npos && ins[a].rt.find("$")!=string::npos)) && ins[b].rd!="") {
 		return 2;
 	  }
 	  else{
@@ -25,8 +25,7 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 }
 // 
 int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-     cout<<ins[b].type<<" "<<ins[b].rd<<endl;
-	  if (ins[a].rt.find(ins[b].rd)!=string::npos && ins[a].rt.find("$")!=string::npos){
+	  if ((ins[a].rt.find(ins[b].rd)!=string::npos && ins[a].rt.find("$")!=string::npos) && ins[b].rd!=""){
 		return 2;
 	  }
 	  else if (ins[a].rs==ins[b].rd){
@@ -67,8 +66,8 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		}
 		else if (command[0]=="lw"){
 			ins[i].rd=command[1];
-			ins[i].rs=command[2];
-			ins[i].rt="";
+			ins[i].rt=command[2];
+			ins[i].rs="";
 			ins[i].value=eval[i];
 		}
 
@@ -101,9 +100,9 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		}
 		else {
 			if(ins[i].type=="sw"){
-				int y= sw_hazard(i,i-1,ins);
+				int y= hazard(i,i-1,ins);
 				int z= 0; int x=0;
-				if(i>1){z=sw_hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
+				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
 				cout<<ins[i].type<<" "<<y<<" "<<x<<" "<<z<<endl;
 				ins[i].time[0]=ins[i-1].time[1];
 				ins[i].time[1]=ins[i-1].time[2];

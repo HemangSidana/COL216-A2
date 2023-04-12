@@ -19,7 +19,7 @@ int dep(int a,int b, instruct(ins)[]){
 	bool x=(ins[a].rs==ins[b].rd);
 	bool y=(ins[a].rt.find(ins[b].rd)!=string::npos);
 	bool z=(ins[a].rt.find("$")!=string::npos);
-	if ( x || (y  && z)) {
+	if ( (x || (y  && z)) && ins[b].rd!="") {
 			return 1;
 		}
 	else{
@@ -81,8 +81,8 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		}
 		else if (command[0]=="lw"){
 			ins[i].rd=command[1];
-			ins[i].rs=command[2];
-			ins[i].rt="";
+			ins[i].rt=command[2];
+			ins[i].rs="";
 			ins[i].value=eval[i];
 		}
 

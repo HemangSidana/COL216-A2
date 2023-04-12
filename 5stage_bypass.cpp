@@ -15,17 +15,9 @@ struct instruct{
 	vector<int> value;
 };
 
-int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-      if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
-		return 0;
-	  }
-	  else{
-		return 0;
-	  }
-}
 // 
 int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-    if (ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) {
+    if ((ins[a].rs==ins[b].rd || (ins[b].rd.find(ins[a].rt)!=string::npos && ins[a].rt.find("$")!=string::npos)) && ins[b].rd!="" ) {
             return 1;
         }
         else{
@@ -63,8 +55,8 @@ int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		}
 		else if (command[0]=="lw"){
 			ins[i].rd=command[1];
-			ins[i].rs=command[2];
-			ins[i].rt="";
+			ins[i].rt=command[2];
+			ins[i].rs="";
 			ins[i].value=eval[i];
 		}
 
