@@ -125,14 +125,28 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 				if(x){z=ins[i-1].time[8];}
 				if(i>1){
 					int y=hazard(i,i-2,ins);
-					if(y){z=max(z,ins[i-2].time[8]);}
+					if(y){
+						if(ins[i-2].type=="sw" || ins[i-2].type=="lw"){
+							z=max(z,ins[i-2].time[8]);
+						}
+						else{
+							z=max(z,ins[i-2].time[6]);
+						}
+					}
 				}
 			}
 			else{
 				if(x){z=ins[i-1].time[6];}
 				if(i>1){
 					int y=hazard(i,i-2,ins);
-					if(y){z=max(z,ins[i-2].time[6]);}
+					if(y){
+						if(ins[i-2].type=="sw" || ins[i-2].type=="lw"){
+							z=max(z,ins[i-2].time[8]);
+						}
+						else{
+							z=max(z,ins[i-2].time[6]);
+						}
+					}
 				}
 			}
 			ins[i].time[0]=ins[i-1].time[0]+1;
@@ -144,11 +158,15 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 				ins[i].time[4]=max(ins[i].time[4],ins[i].time[3]+2);
 			}
 			for(int j=5;j<9;j++){
-				ins[i].time[j]=ins[i].time[j-1]+1;
+				if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type!="sw" || ins[i-1].type!="lw")){
+				ins[i].time[j]=max(ins[i].time[j-1]+1,ins[i-1].time[j]+1);
+				}
+				else{ins[i].time[j]=ins[i].time[j-1]+1;}
 			}
 			if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type=="sw" || ins[i-1].type=="lw")){
 				ins[i].time[6]=max(ins[i].time[6],ins[i-1].time[8]+1);
 			}
+			
 		}
 		for(int k=0;k<9;k++){
 			cout<<ins[i].time[k]<<" ";
