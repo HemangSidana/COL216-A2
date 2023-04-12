@@ -38,8 +38,8 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		else{return 0;}
 	}
 	else if(x==7 && y==9){
-		if(z && ins[b].type!="sw"){return 4;}
-		else{return 2;}
+		if(z){return 4;}
+		else{return 0;}
 	}
 	else if(x==9 && y==7){
 		if(z){return 2;}
@@ -107,39 +107,57 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
     ins[id[0]].time={1,2,3,4,5,6,7,8,9};
 	for(int i=1;i<m;i++){ 
 		// remember to handle branch hazard
-		if(ins[i-1].type=="bne" || ins[i-1].type=="beq" || ins[i-1].type=="j"){
-				ins[i].time[0]=ins[i-1].time[3]+1;
-				for(int j=1;j<9;j++){
-					ins[i].time[j]=ins[i].time[j-1]+1;
-				}
+		if(ins[i-1].type=="j"){
+			ins[i].time[0]=ins[i-1].time[3]+1;
+			for(int j=1;j<9;j++){
+				ins[i].time[j]=ins[i].time[j-1]+1;
+			}
+		}
+		else if(ins[i-1].type=="bne" || ins[i-1].type=="beq"){
+			ins[i].time[0]=ins[i-1].time[5]+1;
+			for(int j=1;j<9;j++){
+				ins[i].time[j]=ins[i].time[j-1]+1;
+			}
 		}
 		else {
 			int x= hazard(i,i-1,ins); int z=ins[i-1].time[4];
 			if(ins[i-1].type=="sw" || ins[i-1].type=="lw"){
-				if(x){z=ins[i-1].time[8]+x;}
+				if(x){z=ins[i-1].time[8];}
 				if(i>1){
 					int y=hazard(i,i-2,ins);
-					if(y){z=max(z,y+ins[i-2].time[8]);}
+					if(y){z=max(z,ins[i-2].time[8]);}
 				}
 			}
 			else{
-				if(x){z=ins[i-1].time[6]+x;}
+				if(x){z=ins[i-1].time[6];}
 				if(i>1){
 					int y=hazard(i,i-2,ins);
-					if(y){z=max(z,y+ins[i-2].time[6]);}
+					if(y){z=max(z,ins[i-2].time[6]);}
 				}
 			}
 			ins[i].time[0]=ins[i-1].time[0]+1;
 			ins[i].time[1]=ins[i].time[0]+1;
 			ins[i].time[2]=ins[i].time[1]+1;
-			ins[i].time[3]=z;
-			for(int j=4;j<9;j++){
+			ins[i].time[3]=ins[i].time[2]+1;
+			ins[i].time[4]=z+1;
+			if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type=="sw" || ins[i-1].type=="lw")){
+				ins[i].time[4]=max(ins[i].time[4],ins[i].time[3]+2);
+			}
+			for(int j=5;j<9;j++){
 				ins[i].time[j]=ins[i].time[j-1]+1;
 			}
+			if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type=="sw" || ins[i-1].type=="lw")){
+				ins[i].time[6]=max(ins[i].time[6],ins[i-1].time[8]+1);
+			}
 		}
+		for(int k=0;k<9;k++){
+			cout<<ins[i].time[k]<<" ";
+		}
+		cout<<endl;
 	}
 	int s=ins[m-1].time[6];
 	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
+	if(m>1 && ins[m-2].type=="sw" || ins[m-2].type=="lw"){s=max(s,ins[m-2].time[8]);}
 	cout<<s<<endl;
 	string t;
 	t.append(1+s,'.');
