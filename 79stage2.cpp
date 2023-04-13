@@ -46,7 +46,7 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 	}
 }
 
-void update(int a, int b, instruct (ins)[], map<string,int> mp, & vector<vector<int>> v, int i){
+void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine){
 	if(ins[i].type=="lw" || ins[i].type=="sw"){
 				for(int j=a;j<b;j++){
 					ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[nine[j]];
@@ -129,12 +129,12 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 		if(ins[i-1].type=="j"){
             
             ins[i].time[0]=ins[i-1].time[3]+1;
-			update(1,9,ins,mp,v,i);
+			update(1,9,ins,mp,v,i,seven,nine);
 			
 		}
 		else if(ins[i-1].type=="bne" || ins[i-1].type=="beq"){
 			ins[i].time[0]=ins[i-1].time[5]+1;
-			update(1,9,ins,mp,v,i);
+			update(1,9,ins,mp,v,i,seven,nine);
 		}
 		else {
 			int x= hazard(i,i-1,ins); int z=ins[i-1].time[4];
@@ -167,9 +167,9 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 				}
 			}
 			ins[i].time[0]=ins[i-1].time[0]+1;
-			update(1,4,ins,mp,v,i);            
+			update(1,4,ins,mp,v,i,seven,nine);            
 			ins[i].time[4]=max(z,ins[i].time[3]+1);
-			update(5,9,ins,mp,v,i);		
+			update(5,9,ins,mp,v,i,seven,nine);		
 		}
 		for(int k=0;k<9;k++){
 			cout<<ins[i].time[k]<<" ";
