@@ -1,7 +1,11 @@
+
 #include <bits/stdc++.h>
+
 #include "MIPS_Processor.hpp"
 using namespace std;
-
+// indicator to know which stage is occupied or free
+// when to remove the stall
+//
 struct instruct{
 	string rs;
 	string rt;
@@ -23,30 +27,17 @@ int dep(int a,int b, instruct(ins)[]){
 	}
 }
 
+
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-    int x=7; int y=7;
-	if(ins[a].type=="sw" || ins[a].type=="lw"){x=9;}
-	if(ins[b].type=="sw" || ins[b].type=="lw"){y=9;}
-	int z= dep(a,b,ins);
-	if(x==7 && y==7){
-		if(z){return 2;}
-		else{return 0;}
-	}
-	else if(x==7 && y==9){
-		if(z){return 4;}
-		else{return 0;}
-	}
-	else if(x==9 && y==7){
-		if(z){return 2;}
-		else{return 0;}
-	}
-	else{
-		if(z && ins[b].type!="sw"){return 4;}
-		else{return 0;}
-	}
+    int z= dep(a,b,ins);
+    if(ins[b].type=="lw" && z){
+        return 1;
+    }
+    return 0;
 }
 
-void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
+
+ void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
 	if(ins[i].type=="lw" || ins[i].type=="sw"){
 		for(int j=a;j<b;j++){
 			ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[nine[j]];
@@ -128,7 +119,7 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
     map<string,int> mp={{ "IF1",0},{"IF2",1},{"DE1",2},{"DE2",3},{"RR",4},{"ALU",5},{"DM1",6},{"DM2",7},{"RW",8}};
     vector<vector<int>> v(1000,vector<int>(9,0));
     ins[0].time={1,2,3,4,5,6,7,8,9}; int last;
-	if(ins[0].type=="lw" || "sw"){last=9;}
+	if(ins[0].type=="lw" || ins[0].type=="sw"){last=9;}
 	else{last=7;}
 
 	for(int i=1;i<m;i++){ 
@@ -175,7 +166,7 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 			}
 			ins[i].time[0]=ins[i-1].time[0]+1;
 			update(1,4,ins,mp,v,i,seven,nine,last);            
-			ins[i].time[4]=max(z,ins[i].time[3]+1);
+			ins[i].time[4]=max(z+1,ins[i].time[3]+1);
 			update(5,9,ins,mp,v,i,seven,nine,last);		
 		}
 		for(int k=0;k<9;k++){

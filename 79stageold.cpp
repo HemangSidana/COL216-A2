@@ -1,7 +1,11 @@
+
 #include <bits/stdc++.h>
+
 #include "MIPS_Processor.hpp"
 using namespace std;
-
+// indicator to know which stage is occupied or free
+// when to remove the stall
+//
 struct instruct{
 	string rs;
 	string rt;
@@ -22,6 +26,7 @@ int dep(int a,int b, instruct(ins)[]){
 		return 0;
 	}
 }
+
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
     int x=7; int y=7;
@@ -46,33 +51,8 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 	}
 }
 
-void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
-	if(ins[i].type=="lw" || ins[i].type=="sw"){
-		for(int j=a;j<b;j++){
-			ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[nine[j]];
-			while(v[ins[i].time[j]][x]>1){
-				ins[i].time[j]++;
-			}
-			if(j==8 && ins[i].time[8]<=last){ins[i].time[8]=last+1; last++;}
-			else if(j==8){last=ins[i].time[8];}
-			v[ins[i].time[j]][x]++;
-		}
-	}
-	else{
-		for(int j=a;j<min(b,7);j++){
-			ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[seven[j]];
-			while(v[ins[i].time[j]][x]>1){
-				ins[i].time[j]++;
-			}
-			if(j==6 && ins[i].time[6]<=last){ins[i].time[6]=last+1; last++;}
-			else if(j==6){last=ins[i].time[6];}
-			v[ins[i].time[j]][x]++;
-		}
-	}
 
-}
-
-void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
+ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 {
 	vector<vector<int>> eval= p[1];
 	vector<int> id = p[0][0] ;
@@ -88,11 +68,11 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 		vector<string> command= commands[id[i]];
 		ins[i].type= command[0];
 		if (command[0]=="bne" || command[0]=="beq"){
-				ins[i].rd=command[3];
-				ins[i].rs=command[1];
-				ins[i].rt=command[2];
-				ins[i].value=eval[i];
-			}
+			ins[i].rd=command[3];
+			ins[i].rs=command[1];
+			ins[i].rt=command[2];
+			ins[i].value=eval[i];
+		}
 		else if (command[0]=="j"){
 			ins[i].rd=command[1];
 			ins[i].rs="";
@@ -123,25 +103,21 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 			(ins[i].time).push_back(-1);
 		}
 	}
-    vector<string> nine{"IF1","IF2","DE1","DE2","RR","ALU","DM1","DM2","RW"};
-    vector<string> seven{"IF1","IF2","DE1","DE2","RR","ALU","RW"};
-    map<string,int> mp={{ "IF1",0},{"IF2",1},{"DE1",2},{"DE2",3},{"RR",4},{"ALU",5},{"DM1",6},{"DM2",7},{"RW",8}};
-    vector<vector<int>> v(1000,vector<int>(9,0));
-    ins[0].time={1,2,3,4,5,6,7,8,9}; int last;
-	if(ins[0].type=="lw" || ins[0].type=="sw"){last=9;}
-	else{last=7;}
 
+    ins[id[0]].time={1,2,3,4,5,6,7,8,9};
 	for(int i=1;i<m;i++){ 
 		// remember to handle branch hazard
 		if(ins[i-1].type=="j"){
-            
-            ins[i].time[0]=ins[i-1].time[3]+1;
-			update(1,9,ins,mp,v,i,seven,nine,last);
-
+			ins[i].time[0]=ins[i-1].time[3]+1;
+			for(int j=1;j<9;j++){
+				ins[i].time[j]=ins[i].time[j-1]+1;
+			}
 		}
 		else if(ins[i-1].type=="bne" || ins[i-1].type=="beq"){
 			ins[i].time[0]=ins[i-1].time[5]+1;
-			update(1,9,ins,mp,v,i,seven,nine,last);
+			for(int j=1;j<9;j++){
+				ins[i].time[j]=ins[i].time[j-1]+1;
+			}
 		}
 		else {
 			int x= hazard(i,i-1,ins); int z=ins[i-1].time[4];
@@ -174,9 +150,23 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 				}
 			}
 			ins[i].time[0]=ins[i-1].time[0]+1;
-			update(1,4,ins,mp,v,i,seven,nine,last);            
-			ins[i].time[4]=max(z+1,ins[i].time[3]+1);
-			update(5,9,ins,mp,v,i,seven,nine,last);		
+			ins[i].time[1]=ins[i].time[0]+1;
+			ins[i].time[2]=ins[i].time[1]+1;
+			ins[i].time[3]=ins[i].time[2]+1;
+			ins[i].time[4]=z+1;
+			if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type=="sw" || ins[i-1].type=="lw")){
+				ins[i].time[4]=max(ins[i].time[4],ins[i].time[3]+2);
+			}
+			for(int j=5;j<9;j++){
+				if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type!="sw" || ins[i-1].type!="lw")){
+				ins[i].time[j]=max(ins[i].time[j-1]+1,ins[i-1].time[j]+1);
+				}
+				else{ins[i].time[j]=ins[i].time[j-1]+1;}
+			}
+			if(ins[i].type!="lw" && ins[i].type!="sw" && (ins[i-1].type=="sw" || ins[i-1].type=="lw")){
+				ins[i].time[6]=max(ins[i].time[6],ins[i-1].time[8]+1);
+			}
+			
 		}
 		for(int k=0;k<9;k++){
 			cout<<ins[i].time[k]<<" ";
