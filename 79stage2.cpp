@@ -1,11 +1,7 @@
-
 #include <bits/stdc++.h>
-
 #include "MIPS_Processor.hpp"
 using namespace std;
-// indicator to know which stage is occupied or free
-// when to remove the stall
-//
+
 struct instruct{
 	string rs;
 	string rt;
@@ -26,7 +22,6 @@ int dep(int a,int b, instruct(ins)[]){
 		return 0;
 	}
 }
-
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
     int x=7; int y=7;
@@ -51,8 +46,29 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 	}
 }
 
+void update(int a, int b, instruct (ins)[], map<string,int> mp, & vector<vector<int>> v, int i){
+	if(ins[i].type=="lw" || ins[i].type=="sw"){
+				for(int j=a;j<b;j++){
+					ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[nine[j]];
+					while(v[ins[i].time[j]][x]>1){
+						ins[i].time[j]++;
+					}
+					v[ins[i].time[j]][x]++;
+				}
+			}
+	else{
+		for(int j=a;j<min(b,7);j++){
+			ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[seven[j]];
+			while(v[ins[i].time[j]][x]>1){
+				ins[i].time[j]++;
+			}
+			v[ins[i].time[j]][x]++;
+		}
+	}
 
- void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
+}
+
+void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 {
 	vector<vector<int>> eval= p[1];
 	vector<int> id = p[0][0] ;
@@ -94,10 +110,10 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		}
 
 		else{
-		ins[i].rd=command[1];
-		ins[i].rs=command[2];
-		ins[i].rt=command[3]; 
-		ins[i].value=eval[i];
+			ins[i].rd=command[1];
+			ins[i].rs=command[2];
+			ins[i].rt=command[3]; 
+			ins[i].value=eval[i];
 		}
 		for (int j=0; j<9; j++){
 			(ins[i].time).push_back(-1);
@@ -113,36 +129,12 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		if(ins[i-1].type=="j"){
             
             ins[i].time[0]=ins[i-1].time[3]+1;
-            for(int j=1;j<9;j++){
-                ins[i].time[j]=ins[i].time[j-1]+1; int x;
-                if(ins[i].type=="lw" || ins[i].type=="sw"){
-                    x=mp[nine[j]]; 
-                }
-                else{
-                    x= mp[seven[j]]; 
-                }
-                while(v[ins[i].time[j]][x]>1){
-                    ins[i].time[j]++;
-                }
-                v[ins[i].time[j]][x]++;
-            }
+			update(1,9,ins,mp,v,i);
 			
 		}
 		else if(ins[i-1].type=="bne" || ins[i-1].type=="beq"){
 			ins[i].time[0]=ins[i-1].time[5]+1;
-			for(int j=1;j<9;j++){
-				ins[i].time[j]=ins[i].time[j-1]+1; int x;
-                if(ins[i].type=="lw" || ins[i].type=="sw"){
-                    x=mp[nine[j]]; 
-                }
-                else{
-                    x= mp[seven[j]]; 
-                }
-                while(v[ins[i].time[j]][x]>1){
-                    ins[i].time[j]++;
-                }
-                v[ins[i].time[j]][x]++;
-			}
+			update(1,9,ins,mp,v,i);
 		}
 		else {
 			int x= hazard(i,i-1,ins); int z=ins[i-1].time[4];
@@ -175,35 +167,9 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 				}
 			}
 			ins[i].time[0]=ins[i-1].time[0]+1;
-            for(int j=1;j<4;j++){
-                ins[i].time[j]=ins[i].time[j-1]+1; int x;
-                if(ins[i].type=="lw" || ins[i].type=="sw"){
-                    x=mp[nine[j]]; 
-                }
-                else{
-                    x= mp[seven[j]]; 
-                }
-                while(v[ins[i].time[j]][x]>1){
-                    ins[i].time[j]++;
-                }
-                v[ins[i].time[j]][x]++;
-            }
+			update(1,4,ins,mp,v,i);            
 			ins[i].time[4]=max(z,ins[i].time[3]+1);
-			for(int j=5;j<9;j++){
-
-				ins[i].time[j]=ins[i].time[j-1]+1; int x;
-                if(ins[i].type=="lw" || ins[i].type=="sw"){
-                    x=mp[nine[j]]; 
-                }
-                else{
-                    x= mp[seven[j]]; 
-                }
-                while(v[ins[i].time[j]][x]>1){
-                    ins[i].time[j]++;
-                }
-                v[ins[i].time[j]][x]++;			
-			}
-			
+			update(5,9,ins,mp,v,i);		
 		}
 		for(int k=0;k<9;k++){
 			cout<<ins[i].time[k]<<" ";
