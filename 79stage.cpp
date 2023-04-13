@@ -46,14 +46,23 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 	}
 }
 
-void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
+ void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
 	if(ins[i].type=="lw" || ins[i].type=="sw"){
 		for(int j=a;j<b;j++){
-			ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[nine[j]];
-			while(v[ins[i].time[j]][x]>1){
+			if(j>0){ins[i].time[j]=ins[i].time[j-1]+1;} 
+			int x=mp[nine[j]];
+			while(v[ins[i].time[j]][x]>=1){
+				v[ins[i].time[j]][mp[nine[j-1]]]++;
 				ins[i].time[j]++;
+				
 			}
-			if(j==8 && ins[i].time[8]<=last){ins[i].time[8]=last+1; last++;}
+			if(j==8 && ins[i].time[8]<=last){
+				for(int k=ins[i].time[8];k<=last;k++){
+					v[k][7]++;
+				}
+				ins[i].time[8]=last+1; 
+				last++;
+				}
 			else if(j==8){last=ins[i].time[8];}
 			v[ins[i].time[j]][x]++;
 		}
@@ -61,10 +70,15 @@ void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<in
 	else{
 		for(int j=a;j<min(b,7);j++){
 			ins[i].time[j]=ins[i].time[j-1]+1; int x=mp[seven[j]];
-			while(v[ins[i].time[j]][x]>1){
+			while(v[ins[i].time[j]][x]>=1){
+				v[ins[i].time[j]][mp[seven[j-1]]]++;
 				ins[i].time[j]++;
 			}
-			if(j==6 && ins[i].time[6]<=last){ins[i].time[6]=last+1; last++;}
+			if(j==6 && ins[i].time[6]<=last){
+				for(int k=ins[i].time[6];k<=last;k++){
+					v[k][5]++;
+				}
+				ins[i].time[6]=last+1; last++;}
 			else if(j==6){last=ins[i].time[6];}
 			v[ins[i].time[j]][x]++;
 		}
@@ -173,10 +187,13 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 					}
 				}
 			}
-			ins[i].time[0]=ins[i-1].time[0]+1;
+			ins[i].time[0]=ins[i-1].time[1];
 			update(1,4,ins,mp,v,i,seven,nine,last);            
-			ins[i].time[4]=max(z+1,ins[i].time[3]+1);
-			update(5,9,ins,mp,v,i,seven,nine,last);		
+			ins[i].time[4]=max({z+1,ins[i].time[3]+1,ins[i-1].time[5]});
+			for(int k=ins[i].time[3]+1;k<ins[i].time[4];k++){
+				v[k][3]++; 
+			}
+			update(5,9,ins,mp,v,i,seven,nine,last);
 		}
 		for(int k=0;k<9;k++){
 			cout<<ins[i].time[k]<<" ";
