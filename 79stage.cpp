@@ -68,11 +68,11 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		vector<string> command= commands[id[i]];
 		ins[i].type= command[0];
 		if (command[0]=="bne" || command[0]=="beq"){
-				ins[i].rd=command[3];
-				ins[i].rs=command[1];
-				ins[i].rt=command[2];
-				ins[i].value=eval[i];
-			}
+			ins[i].rd=command[3];
+			ins[i].rs=command[1];
+			ins[i].rt=command[2];
+			ins[i].value=eval[i];
+		}
 		else if (command[0]=="j"){
 			ins[i].rd=command[1];
 			ins[i].rs="";
@@ -94,10 +94,10 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 		}
 
 		else{
-		ins[i].rd=command[1];
-		ins[i].rs=command[2];
-		ins[i].rt=command[3]; 
-		ins[i].value=eval[i];
+			ins[i].rd=command[1];
+			ins[i].rs=command[2];
+			ins[i].rt=command[3]; 
+			ins[i].value=eval[i];
 		}
 		for (int j=0; j<9; j++){
 			(ins[i].time).push_back(-1);
