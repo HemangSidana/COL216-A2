@@ -91,7 +91,7 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 	ins[id[0]].time={1,2,3,4,5};
 	for(int i=1;i<m;i++){ 
 		// remember to handle branch hazard
-		if(ins[i-1].type=="bne" || ins[i-1].type=="beq" || ins[i-1].type=="j"){
+		if(ins[i-1].type=="bne" || ins[i-1].type=="beq"){
 				(ins[i].time)[0]=(ins[i-1].time)[3];
 				ins[i].time[1]=ins[i].time[0]+1;
 				ins[i].time[2]=ins[i].time[1]+1;
@@ -105,27 +105,15 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 				ins[i].time[3]=ins[i].time[2]+1;
 				ins[i].time[4]=ins[i].time[3]+1;
 		}
-		else {
-			if(ins[i].type=="sw"){
-				int y= hazard(i,i-1,ins);
-				int z= 0; int x=0;
-				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				ins[i].time[0]=ins[i-1].time[1];
-				ins[i].time[1]=ins[i-1].time[2];
-				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
-				ins[i].time[3]=ins[i].time[2]+1;
-				ins[i].time[4]=ins[i].time[3]+1;
-			}
-			else{
-				int y= hazard(i,i-1,ins);
-				int z= 0; int x=0;
-				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				(ins[i].time)[0]=(ins[i-1].time)[1];
-				ins[i].time[1]=ins[i-1].time[2];
-				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
-				ins[i].time[3]=ins[i].time[2]+1;
-				ins[i].time[4]=ins[i].time[3]+1;
-			}
+		else {			
+			int y= hazard(i,i-1,ins);
+			int z= 0; int x=0;
+			if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
+			ins[i].time[0]=ins[i-1].time[1];
+			ins[i].time[1]=ins[i-1].time[2];
+			ins[i].time[2]= max((ins[i-1].time[3]+y),x);
+			ins[i].time[3]=ins[i].time[2]+1;
+			ins[i].time[4]=ins[i].time[3]+1;			
 		}
 	}
 	int s=ins[m-1].time[4];
