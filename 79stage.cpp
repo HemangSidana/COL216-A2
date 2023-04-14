@@ -49,21 +49,24 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
  void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
 	if(ins[i].type=="lw" || ins[i].type=="sw"){
 		for(int j=a;j<b;j++){
-			if(j>0){ins[i].time[j]=ins[i].time[j-1]+1;} 
+			ins[i].time[j]=ins[i].time[j-1]+1; 
 			int x=mp[nine[j]];
 			while(v[ins[i].time[j]][x]>=1){
 				v[ins[i].time[j]][mp[nine[j-1]]]++;
 				ins[i].time[j]++;
 				
 			}
-			if(j==8 && ins[i].time[8]<=last){
+			if(j==8 && ins[i].time[8]<=last && ins[i].type=="lw"){
 				for(int k=ins[i].time[8];k<=last;k++){
 					v[k][7]++;
 				}
 				ins[i].time[8]=last+1; 
 				last++;
-				}
-			else if(j==8){last=ins[i].time[8];}
+	
+			}
+			else if(j==8 && ins[i].type=="lw"){last=ins[i].time[8];}
+			if(j==7 && ins[i].type=="sw"){last=max(last,ins[i].time[7]-1); }
+			if(j==8 && ins[i].type=="sw"){continue;}
 			v[ins[i].time[j]][x]++;
 		}
 	}
@@ -78,7 +81,9 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 				for(int k=ins[i].time[6];k<=last;k++){
 					v[k][5]++;
 				}
-				ins[i].time[6]=last+1; last++;}
+				ins[i].time[6]=last+1; last++;
+			
+			}
 			else if(j==6){last=ins[i].time[6];}
 			v[ins[i].time[j]][x]++;
 		}
@@ -91,6 +96,7 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 	vector<vector<int>> eval= p[1];
 	vector<int> id = p[0][0] ;
     int m=id.size();
+	
 	if (commands.size() >= MAX / 4)
 	{
 		handleExit(MEMORY_ERROR, 0);
@@ -195,12 +201,45 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 			}
 			update(5,9,ins,mp,v,i,seven,nine,last);
 		}
-		for(int k=0;k<9;k++){
-			cout<<ins[i].time[k]<<" ";
+		// for(int k=0;k<9;k++){
+		// 	cout<<ins[i].time[k]<<" ";
+		// }
+		// cout<<endl;
+	}
+	vector<int> ex;
+	for(int i=0; i<m;i++){
+		if(ins[i].type=="sw"){ex.push_back(ins[i].time[7]);}
+		else if(ins[i].type=="lw"){ex.push_back(ins[i].time[8]);}
+		else{
+			ex.push_back(ins[i].time[6]);
 		}
-		cout<<endl;
 	}
 	int s=ins[m-1].time[6];
+	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
+	if(m>1 && ins[m-2].type=="sw" || ins[m-2].type=="lw"){s=max(s,ins[m-2].time[8]);}
+	int k=-1;
+	vector<int> cur(33,0);
+	int i=0;
+	for(auto w: ex){cout<<w<<" ";}
+	cout<<endl;
+	for(int t=0;t<=s;t++){
+		if(t==ex[i]){
+			k++; i++;
+			cur=eval[k];
+		for(int j=0; j<32;j++){cout<<cur[j]<<" ";}
+		cout<<endl;
+		if(ins[i].type=="sw"){
+			for(int j=32; j<cur.size();j++){cout<<cur[j]<<" ";}
+			cout<<endl;
+		}
+		else{cout<<0<<endl;}
+		}
+		for(int j=0; j<32;j++){cout<<cur[j]<<" ";}
+		cout<<endl;
+		cout<<0<<endl;
+	}
+	//print
+	s=ins[m-1].time[6];
 	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
 	if(m>1 && ins[m-2].type=="sw" || ins[m-2].type=="lw"){s=max(s,ins[m-2].time[8]);}
 	cout<<s<<endl;
@@ -221,6 +260,7 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 	for(auto x: pipe){
 		cout<<x<<endl;
 	}
+	//print
 }
 
 int main(int argc, char *argv[])

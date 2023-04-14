@@ -402,13 +402,15 @@ struct MIPS_Architecture
 	vector<int> printRegistersAndMemoryDelta(int clockCycle)
 	{
 		vector<int> x;
-		for (int i = 0; i < 32; ++i)
-			x.push_back(registers[i]);
+		for (int i = 0; i < 32; ++i){x.push_back(registers[i]);}
 		// std::cout << '\n';
 		// std::cout << memoryDelta.size() << ' ';
-		// for (auto &p : memoryDelta)
-		// 	std::cout << p.first << ' ' << p.second << '\n';
-		// memoryDelta.clear();
+		x.push_back(memoryDelta.size());
+		for (auto &p : memoryDelta){
+			x.push_back(p.first);
+			x.push_back(p.second);
+		}
+		memoryDelta.clear();
 		return x;
 	}
 	void executeCommandspipelined(vector<vector<vector<int>>> p);

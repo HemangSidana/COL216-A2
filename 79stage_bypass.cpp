@@ -37,24 +37,26 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 }
 
 
- void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
+  void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
 	if(ins[i].type=="lw" || ins[i].type=="sw"){
 		for(int j=a;j<b;j++){
-			if(j>0){ins[i].time[j]=ins[i].time[j-1]+1;} 
+			ins[i].time[j]=ins[i].time[j-1]+1; 
 			int x=mp[nine[j]];
 			while(v[ins[i].time[j]][x]>=1){
 				v[ins[i].time[j]][mp[nine[j-1]]]++;
 				ins[i].time[j]++;
 				
 			}
-			if(j==8 && ins[i].time[8]<=last){
+			if(j==8 && ins[i].time[8]<=last && ins[i].type=="lw"){
 				for(int k=ins[i].time[8];k<=last;k++){
 					v[k][7]++;
 				}
 				ins[i].time[8]=last+1; 
 				last++;
 				}
-			else if(j==8){last=ins[i].time[8];}
+			else if(j==8 && ins[i].type=="lw"){last=ins[i].time[8];}
+			if(j==7 && ins[i].type=="sw"){last=max(last,ins[i].time[7]-1);}
+			if(j==8 && ins[i].type=="sw"){continue;}
 			v[ins[i].time[j]][x]++;
 		}
 	}
@@ -155,8 +157,11 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 				if(i>1){
 					int y=hazard(i,i-2,ins);
 					if(y){
-						if(ins[i-2].type=="sw" || ins[i-2].type=="lw"){
+						if(ins[i-2].type=="lw"){
 							z=max(z,ins[i-2].time[8]);
+						}
+						else if(ins[i-2].type=="sw"){
+							z=max(z,ins[i-2].time[7]);
 						}
 						else{
 							z=max(z,ins[i-2].time[6]);
@@ -169,8 +174,11 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 				if(i>1){
 					int y=hazard(i,i-2,ins);
 					if(y){
-						if(ins[i-2].type=="sw" || ins[i-2].type=="lw"){
+						if(ins[i-2].type=="lw"){
 							z=max(z,ins[i-2].time[8]);
+						}
+						else if(ins[i-2].type=="sw"){
+							z=max(z,ins[i-2].time[7]);
 						}
 						else{
 							z=max(z,ins[i-2].time[6]);
