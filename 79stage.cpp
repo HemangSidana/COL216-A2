@@ -206,42 +206,45 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 		// }
 		// cout<<endl;
 	}
-	vector<int> ex;
-	for(int i=0; i<m;i++){
-		if(ins[i].type=="sw"){ex.push_back(ins[i].time[7]);}
-		else if(ins[i].type=="lw"){ex.push_back(ins[i].time[8]);}
-		else{
-			ex.push_back(ins[i].time[6]);
-		}
-	}
 	int s=ins[m-1].time[6];
 	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
 	if(m>1 && ins[m-2].type=="sw" || ins[m-2].type=="lw"){s=max(s,ins[m-2].time[8]);}
-	int k=-1;
-	vector<int> cur(33,0);
-	int i=0;
-	for(auto w: ex){cout<<w<<" ";}
-	cout<<endl;
-	for(int t=0;t<=s;t++){
-		if(t==ex[i]){
-			k++; i++;
-			cur=eval[k];
-		for(int j=0; j<32;j++){cout<<cur[j]<<" ";}
-		cout<<endl;
-		if(ins[i].type=="sw"){
-			for(int j=32; j<cur.size();j++){cout<<cur[j]<<" ";}
-			cout<<endl;
-		}
-		else{cout<<0<<endl;}
-		}
-		for(int j=0; j<32;j++){cout<<cur[j]<<" ";}
-		cout<<endl;
-		cout<<0<<endl;
+	vector<int> ex;
+	for(int i=0;i<m;i++){
+		if(ins[i].type=="sw"){ex.push_back(ins[i].time[7]);}
+		else if(ins[i].type=="lw"){ex.push_back(ins[i].time[8]);}
+		else{ex.push_back(ins[i].time[6]);}
 	}
-	//print
-	s=ins[m-1].time[6];
-	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
-	if(m>1 && ins[m-2].type=="sw" || ins[m-2].type=="lw"){s=max(s,ins[m-2].time[8]);}
+	for(auto x: ex){cout<<x<<" ";} cout<<endl;
+	int j=0;
+	vector<int> cur(33,0);
+	for(int t=0;t<=s;t++){
+		vector<int> st;
+		if(t==ex[j]){
+			cur= eval[j]; j++;
+			if(cur.size()>33){
+				st.push_back(cur[32]); st.push_back(cur[33]); st.push_back(cur[34]);
+			}
+			if(ex[j]==t){
+				cur= eval[j]; j++;
+				if(cur.size()>33){
+					st.push_back(cur[32]); st.push_back(cur[33]); st.push_back(cur[34]);
+				}
+			}
+		}
+		for(int y=0; y<32; y++){
+			cout<<cur[y]<<" ";
+		}
+		cout<<endl;
+		if(st.size()){
+			for(auto x: st){
+				cout<<x<<" ";
+			}
+		}
+		else{cout<<0;}
+		cout<<endl;
+	}
+	//print	
 	cout<<s<<endl;
 	string t;
 	t.append(1+s,'.');

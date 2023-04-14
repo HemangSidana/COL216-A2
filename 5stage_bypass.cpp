@@ -73,7 +73,6 @@ int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		ins[i].rt=command[3]; 
 		ins[i].value=eval[i];
 		}
-	   cout<<"Hello"<<endl;
 		for (int j=0; j<5; j++){
 			(ins[i].time).push_back(-1);
 		}
@@ -114,6 +113,45 @@ int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		}
 	}
 	int s=ins[m-1].time[4];
+	vector<int> ex;
+	for(int i=0;i<m;i++){
+		if(ins[i].type=="sw"){ex.push_back(ins[i].time[3]);}
+		else{ex.push_back(ins[i].time[4]);}
+	}
+	for(auto x: ex){cout<<x<<" ";} cout<<endl;
+	int j=0;
+	vector<int> cur(33,0);
+	for(int t=0; t<=s;t++){
+		vector<int> st;
+		if(ex[j]==t){
+			cur= eval[j]; j++;
+			if(cur.size()>33){
+				for(int i=32;i<cur.size();i++){
+					st.push_back(cur[i]);
+				}
+			}
+			if(ex[j]==t){
+				cur= eval[j]; j++;
+				for(int i=32;i<cur.size();i++){
+					st.push_back(cur[i]);
+				}
+			}
+		}
+		for(int i=0;i<32;i++){
+			cout<<cur[i]<<" ";
+		}
+		cout<<endl;
+		if(st.size()){
+			for(auto x: st){
+				cout<<x<<" ";
+			}
+			cout<<endl;
+		}
+		else{
+			cout<<0<<endl;
+		}
+	}
+	//print
 	cout<<s<<endl;
 	string t;
 	t.append(1+s,'.');
@@ -126,6 +164,7 @@ int lw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 	for(auto x: pipe){
 		cout<<x<<endl;
 	}
+	//print
 }
 
 int main(int argc, char *argv[])

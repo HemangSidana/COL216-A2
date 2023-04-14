@@ -110,7 +110,6 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 				int y= hazard(i,i-1,ins);
 				int z= 0; int x=0;
 				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				cout<<ins[i].type<<" "<<y<<" "<<x<<" "<<z<<endl;
 				ins[i].time[0]=ins[i-1].time[1];
 				ins[i].time[1]=ins[i-1].time[2];
 				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
@@ -121,7 +120,6 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 				int y= hazard(i,i-1,ins);
 				int z= 0; int x=0;
 				if(i>1){z=hazard(i,i-2,ins); x=ins[i-2].time[3]+z;}
-				cout<<ins[i].type<<" "<<y<<" "<<x<<" "<<z<<endl;
 				(ins[i].time)[0]=(ins[i-1].time)[1];
 				ins[i].time[1]=ins[i-1].time[2];
 				ins[i].time[2]= max((ins[i-1].time[3]+y),x);
@@ -131,6 +129,35 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 		}
 	}
 	int s=ins[m-1].time[4];
+	vector<int> ex;
+	for(int i=0;i<m;i++){
+		if(ins[i].type=="sw"){ex.push_back(ins[i].time[3]);}
+		else{ex.push_back(ins[i].time[4]);}
+	}
+	for(auto x: ex){cout<<x<<" ";} cout<<endl;
+	int j=0;
+	vector<int> cur(33,0);
+	for(int t=0; t<=s;t++){
+		if(ex[j]==t){
+			cur= eval[j]; j++;
+			for(int i=0;i<32;i++){
+				cout<< cur[i]<<" ";
+			}
+			cout<<endl;		
+			for(int i=32;i<cur.size();i++){
+				cout<< cur[i]<<" ";
+			}
+			cout<<endl;
+		}
+		else{
+			for(int i=0;i<32;i++){
+				cout<< cur[i]<<" ";
+			}
+			cout<<endl;
+			cout<<0<<endl;
+		}
+	}
+	//print
 	cout<<s<<endl;
 	string t;
 	t.append(1+s,'.');
@@ -143,6 +170,7 @@ int sw_hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th i
 	for(auto x: pipe){
 		cout<<x<<endl;
 	}
+	//print
 }
 
 int main(int argc, char *argv[])

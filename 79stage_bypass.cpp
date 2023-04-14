@@ -29,15 +29,27 @@ int dep(int a,int b, instruct(ins)[]){
 
 
 int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th instruction 
-    int z= dep(a,b,ins);
-    if(ins[b].type=="lw" && z){
-        return 1;
-    }
-    return 0;
+    if(ins[b].type=="lw"){
+		bool x=(ins[a].rs==ins[b].rd);
+		bool y=(ins[a].rt.find(ins[b].rd)!=string::npos);
+		bool z=(ins[a].rt.find("$")!=string::npos);
+		if(ins[a].type=="sw"){
+			if(y && z){
+				return 1;
+			}
+			else if(x){return 2;}
+			else{return 0;}
+		}
+		else{
+			if(x || (y  && z)){return 2;}
+			else{return 0;}
+		}
+	}
+	return 0;
 }
 
 
-  void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last){
+  void update(int a, int b, instruct (ins)[], map<string,int> mp, vector<vector<int>> &v, int i, vector<string> seven, vector<string> nine, int &last, int dm2, int alu){
 	if(ins[i].type=="lw" || ins[i].type=="sw"){
 		for(int j=a;j<b;j++){
 			ins[i].time[j]=ins[i].time[j-1]+1; 
@@ -46,6 +58,18 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 				v[ins[i].time[j]][mp[nine[j-1]]]++;
 				ins[i].time[j]++;
 				
+			}
+			if(j==5 && ins[i].time[5]<=alu){
+				for(int l=ins[i].time[5]; l<alu;l++){
+					v[ins[i].time[4]][4]++;
+				}
+				ins[i].time[5]=alu;
+			}
+			if(j==7 && ins[i].time[7]<=dm2){
+				for(int l=ins[i].time[7]; l<dm2;l++){
+					v[ins[i].time[6]][6]++;
+				}
+				ins[i].time[7]=dm2;
 			}
 			if(j==8 && ins[i].time[8]<=last && ins[i].type=="lw"){
 				for(int k=ins[i].time[8];k<=last;k++){
@@ -67,11 +91,18 @@ int hazard(int a,int b, instruct ( ins)[]){ // if rt of sw depends on i-1th inst
 				v[ins[i].time[j]][mp[seven[j-1]]]++;
 				ins[i].time[j]++;
 			}
+			if(j==5 && ins[i].time[5]<=alu){
+				for(int l=ins[i].time[5]; l<alu;l++){
+					v[ins[i].time[4]][4]++;
+				}
+				ins[i].time[5]=alu;
+			}
 			if(j==6 && ins[i].time[6]<=last){
 				for(int k=ins[i].time[6];k<=last;k++){
 					v[k][5]++;
 				}
-				ins[i].time[6]=last+1; last++;}
+				ins[i].time[6]=last+1; last++;
+			}
 			else if(j==6){last=ins[i].time[6];}
 			v[ins[i].time[j]][x]++;
 		}
@@ -83,6 +114,12 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 {
 	vector<vector<int>> eval= p[1];
 	vector<int> id = p[0][0] ;
+	// for(int l=0;l<id.size();l++){
+	// 	for(auto x: eval[l]){
+	// 		cout<<x<<" ";
+	// 	}
+	// 	cout<<endl;
+	// }	
     int m=id.size();
 	if (commands.size() >= MAX / 4)
 	{
@@ -143,56 +180,29 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 		if(ins[i-1].type=="j"){
             
             ins[i].time[0]=ins[i-1].time[3]+1;
-			update(1,9,ins,mp,v,i,seven,nine,last);
+			update(1,9,ins,mp,v,i,seven,nine,last,-1,-1);
 
 		}
 		else if(ins[i-1].type=="bne" || ins[i-1].type=="beq"){
 			ins[i].time[0]=ins[i-1].time[5]+1;
-			update(1,9,ins,mp,v,i,seven,nine,last);
+			update(1,9,ins,mp,v,i,seven,nine,last,-1,-1);
 		}
 		else {
-			int x= hazard(i,i-1,ins); int z=ins[i-1].time[4];
-			if(ins[i-1].type=="sw" || ins[i-1].type=="lw"){
-				if(x){z=ins[i-1].time[8];}
-				if(i>1){
-					int y=hazard(i,i-2,ins);
-					if(y){
-						if(ins[i-2].type=="lw"){
-							z=max(z,ins[i-2].time[8]);
-						}
-						else if(ins[i-2].type=="sw"){
-							z=max(z,ins[i-2].time[7]);
-						}
-						else{
-							z=max(z,ins[i-2].time[6]);
-						}
-					}
-				}
+			int x= hazard(i,i-1,ins); int y=0;
+			if(i>1){y=hazard(i,i-2,ins); if(y==1){y=0;}}
+			int dm2=-1;
+			if(x==1){
+				dm2=ins[i-1].time[8];
 			}
-			else{
-				if(x){z=ins[i-1].time[6];}
-				if(i>1){
-					int y=hazard(i,i-2,ins);
-					if(y){
-						if(ins[i-2].type=="lw"){
-							z=max(z,ins[i-2].time[8]);
-						}
-						else if(ins[i-2].type=="sw"){
-							z=max(z,ins[i-2].time[7]);
-						}
-						else{
-							z=max(z,ins[i-2].time[6]);
-						}
-					}
-				}
+			int alu=-1;
+			if(y==2){
+				alu=ins[i-2].time[8];
+			}
+			if(x==2){
+				alu=ins[i-1].time[8];
 			}
 			ins[i].time[0]=ins[i-1].time[1];
-			update(1,4,ins,mp,v,i,seven,nine,last);            
-			ins[i].time[4]=max({z+1,ins[i].time[3]+1,ins[i-1].time[5]});
-			for(int k=ins[i].time[3]+1;k<ins[i].time[4];k++){
-				v[k][3]++; 
-			}
-			update(5,9,ins,mp,v,i,seven,nine,last);		
+			update(1,9,ins,mp,v,i,seven,nine,last,dm2,alu);
 		}
 		for(int k=0;k<9;k++){
 			cout<<ins[i].time[k]<<" ";
@@ -202,6 +212,42 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 	int s=ins[m-1].time[6];
 	if(ins[m-1].type=="lw" || ins[m-1].type=="sw"){s=ins[m-1].time[8];}
 	if(m>1 && ins[m-2].type=="sw" || ins[m-2].type=="lw"){s=max(s,ins[m-2].time[8]);}
+	vector<int> ex;
+	for(int i=0;i<m;i++){
+		if(ins[i].type=="sw"){ex.push_back(ins[i].time[7]);}
+		else if(ins[i].type=="lw"){ex.push_back(ins[i].time[8]);}
+		else{ex.push_back(ins[i].time[6]);}
+	}
+	for(auto x: ex){cout<<x<<" ";} cout<<endl;
+	int j=0;
+	vector<int> cur(33,0);
+	for(int t=0;t<=s;t++){
+		vector<int> st;
+		if(t==ex[j]){
+			cur= eval[j]; j++;
+			if(cur.size()>33){
+				st.push_back(cur[33]); st.push_back(cur[34]); st.push_back(cur[35]);
+			}
+			if(ex[j]==t){
+				cur= eval[j]; j++;
+				if(cur.size()>33){
+					st.push_back(cur[33]); st.push_back(cur[34]); st.push_back(cur[35]);
+				}
+			}
+		}
+		for(int y=0; y<32; y++){
+			cout<<cur[y]<<" ";
+		}
+		cout<<endl;
+		if(st.size()){
+			for(auto x: st){
+				cout<<x<<" ";
+			}
+		}
+		else{cout<<0;}
+		cout<<endl;
+	}
+	//print	
 	cout<<s<<endl;
 	string t;
 	t.append(1+s,'.');
@@ -220,6 +266,7 @@ void MIPS_Architecture::executeCommandspipelined(	vector<vector<vector<int>>> p)
 	for(auto x: pipe){
 		cout<<x<<endl;
 	}
+	//print
 }
 
 int main(int argc, char *argv[])
