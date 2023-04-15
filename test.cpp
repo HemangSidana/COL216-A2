@@ -14,7 +14,8 @@ int you(string s)
 
 int main()
 {
-	SaturatingBHRBranchPredictor Pred(3,65536);
+	SaturatingBHRBranchPredictor Pred(2,65536);
+	// SaturatingBranchPredictor Pred(2);
 	// Pred(0);
 	std::ifstream file("branchtrace.txt");
 	string str;

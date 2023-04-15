@@ -71,9 +71,4 @@ bitset<2> ret(bitset<2> prev, bool taken){
 		
 }
 
-
-
-
-
-
 #endif
